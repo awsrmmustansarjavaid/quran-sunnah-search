@@ -8,6 +8,17 @@ Nur Search combines a calm Islamic visual experience with a source-first search 
 
 ---
 
+## 🌐 Live Demo
+
+🚀 **Try Nur Search — Quran & Sunnah Search Engine**
+
+👉 [**Open Live Demo**](https://awsrmmustansarjavaid.github.io/quran-sunnah-search/)
+
+> The application is automatically built and deployed to GitHub Pages whenever changes are pushed to the `main` branch.
+
+
+---
+
 ## Features
 
 ### Search

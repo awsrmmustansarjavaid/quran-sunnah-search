@@ -1,42 +1,174 @@
-/* Global design tokens create the spiritual midnight/emerald visual language. */
+/*
+ * ============================================================
+ * NUR SEARCH — GLOBAL STYLES
+ * ============================================================
+ *
+ * This stylesheet controls the complete visual design of the
+ * Nur Search application.
+ *
+ * Main design goals:
+ *
+ * - Spiritual midnight/emerald visual language.
+ * - Gold accents for an elegant Islamic-inspired interface.
+ * - Dark and light themes.
+ * - Glassmorphism-style panels.
+ * - Responsive layouts for desktop, tablet, and mobile.
+ * - Accessible focus/interaction states.
+ * - Lightweight CSS animations.
+ * - Reduced-motion support for accessibility.
+ *
+ * The application is frontend-only and these styles do not
+ * depend on a backend server.
+ */
+
+
+/*
+ * ============================================================
+ * GLOBAL DESIGN TOKENS — DARK THEME
+ * ============================================================
+ *
+ * :root contains reusable CSS variables.
+ *
+ * Using variables makes it possible to change the complete
+ * visual theme without rewriting every individual component.
+ */
 :root {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /*
+   * Main application font.
+   *
+   * Inter is preferred, while the remaining fonts provide
+   * sensible fallbacks if Inter is unavailable.
+   */
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  /* Default text and page colors. */
   color: #edf7f2;
   background: #061612;
+
+  /*
+   * Prevent browsers from automatically creating synthetic
+   * bold or italic versions of fonts.
+   */
   font-synthesis: none;
+
+  /*
+   * Improves text rendering and readability.
+   */
   text-rendering: optimizeLegibility;
+
+  /* ==========================================================
+     DARK THEME VARIABLES
+     ========================================================== */
+
   --bg: #061612;
   --bg-soft: #0a211b;
+
+  /* Semi-transparent panels used for cards and containers. */
   --panel: rgba(12, 39, 31, 0.72);
   --panel-strong: rgba(16, 49, 39, 0.92);
+
+  /* Gold-based border color. */
   --border: rgba(182, 150, 77, 0.22);
+
+  /* Primary gold accent. */
   --gold: #d6b66a;
+
+  /* Softer gold used for headings and secondary accents. */
   --gold-soft: #ead7a0;
+
+  /* Emerald accent used throughout the interface. */
   --emerald: #6dd3a4;
+
+  /* Main and secondary text colors. */
   --text: #edf7f2;
   --muted: #9db8ad;
+
+  /* Standard card shadow. */
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
 }
 
+
+/*
+ * ============================================================
+ * LIGHT THEME
+ * ============================================================
+ *
+ * The React application changes the HTML attribute to:
+ *
+ * data-theme="light"
+ *
+ * These variables then replace the dark theme colors.
+ */
 :root[data-theme="light"] {
   color: #16342a;
   background: #f4f1e7;
+
   --bg: #f4f1e7;
   --bg-soft: #eae7da;
+
+  /* Light glass-style panels. */
   --panel: rgba(255, 255, 250, 0.78);
   --panel-strong: #fffdf6;
+
+  /* Darker border for visibility on light backgrounds. */
   --border: rgba(79, 102, 83, 0.2);
+
+  /* Darker gold ensures sufficient contrast in light mode. */
   --gold: #9b7627;
   --gold-soft: #7c5f20;
+
+  /* Emerald accent for light theme. */
   --emerald: #13764f;
+
+  /* Light-theme text colors. */
   --text: #16342a;
   --muted: #60746b;
+
+  /* Softer shadow for the light theme. */
   --shadow: 0 24px 70px rgba(37, 53, 45, 0.12);
 }
 
-* { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+/*
+ * ============================================================
+ * GLOBAL BOX SIZING
+ * ============================================================
+ *
+ * Makes width and height calculations more predictable.
+ *
+ * Padding and borders are included inside an element's declared
+ * width and height.
+ */
+* {
+  box-sizing: border-box;
+}
+
+
+/*
+ * Enable smooth scrolling when navigating to sections such as:
+ *
+ * #search
+ * #topics
+ * #sources
+ * #about
+ */
+html {
+  scroll-behavior: smooth;
+}
+
+
+/*
+ * ============================================================
+ * BODY
+ * ============================================================
+ */
 
 body {
   margin: 0;
@@ -45,321 +177,2021 @@ body {
   color: var(--text);
 }
 
-button, input { font: inherit; }
 
-button, a { -webkit-tap-highlight-color: transparent; }
+/*
+ * Make form controls inherit the application's font.
+ */
+button,
+input {
+  font: inherit;
+}
 
-button { cursor: pointer; }
 
-a { color: inherit; text-decoration: none; }
+/*
+ * Remove the default mobile tap highlight where supported.
+ */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
 
+
+/*
+ * All buttons should show a pointer cursor.
+ */
+button {
+  cursor: pointer;
+}
+
+
+/*
+ * Links inherit the application's text color and do not use
+ * browser-default underlines.
+ */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+
+/*
+ * ============================================================
+ * APPLICATION SHELL
+ * ============================================================
+ *
+ * The application shell is the main visual background.
+ */
 .app-shell {
   position: relative;
   min-height: 100vh;
   overflow: hidden;
+
+  /*
+   * Multiple radial gradients create a subtle atmospheric
+   * background without requiring image assets.
+   */
   background:
-    radial-gradient(circle at 50% -10%, rgba(91, 166, 126, 0.16), transparent 38%),
-    radial-gradient(circle at 8% 40%, rgba(204, 167, 76, 0.07), transparent 25%),
+    radial-gradient(
+      circle at 50% -10%,
+      rgba(91, 166, 126, 0.16),
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 8% 40%,
+      rgba(204, 167, 76, 0.07),
+      transparent 25%
+    ),
     var(--bg);
 }
 
+
+/*
+ * ============================================================
+ * GEOMETRIC BACKGROUND PATTERN
+ * ============================================================
+ *
+ * Creates a subtle geometric pattern inspired by Islamic
+ * geometric design.
+ *
+ * pointer-events: none ensures it never blocks interaction.
+ */
 .app-shell::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
+
   opacity: 0.055;
+
   background-image:
-    linear-gradient(30deg, rgba(214,182,106,.8) 12%, transparent 12.5%, transparent 87%, rgba(214,182,106,.8) 87.5%, rgba(214,182,106,.8)),
-    linear-gradient(150deg, rgba(214,182,106,.8) 12%, transparent 12.5%, transparent 87%, rgba(214,182,106,.8) 87.5%, rgba(214,182,106,.8));
+    linear-gradient(
+      30deg,
+      rgba(214, 182, 106, 0.8) 12%,
+      transparent 12.5%,
+      transparent 87%,
+      rgba(214, 182, 106, 0.8) 87.5%,
+      rgba(214, 182, 106, 0.8)
+    ),
+    linear-gradient(
+      150deg,
+      rgba(214, 182, 106, 0.8) 12%,
+      transparent 12.5%,
+      transparent 87%,
+      rgba(214, 182, 106, 0.8) 87.5%,
+      rgba(214, 182, 106, 0.8)
+    );
+
   background-size: 70px 120px;
-  background-position: 0 0, 35px 60px;
-  mask-image: linear-gradient(to bottom, black, transparent 70%);
+  background-position:
+    0 0,
+    35px 60px;
+
+  /*
+   * Fade the pattern toward the lower portion of the page.
+   */
+  mask-image: linear-gradient(
+    to bottom,
+    black,
+    transparent 70%
+  );
 }
+
+
+/*
+ * ============================================================
+ * HEADER
+ * ============================================================
+ */
 
 .site-header {
   position: relative;
   z-index: 10;
+
+  /*
+   * Maximum width:
+   * 1180px on large screens and responsive width on smaller
+   * screens.
+   */
   width: min(1180px, calc(100% - 40px));
+
   margin: 0 auto;
+
   height: 82px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.brand { display: flex; align-items: center; gap: 11px; }
 
+/*
+ * Application brand/logo container.
+ */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+
+/*
+ * Circular moon logo.
+ */
 .brand-mark {
   display: grid;
   place-items: center;
+
   width: 40px;
   height: 40px;
+
   border: 1px solid var(--border);
   border-radius: 50%;
+
   color: var(--gold);
+
   background: rgba(214, 182, 106, 0.06);
+
   font-size: 23px;
-  box-shadow: 0 0 30px rgba(214, 182, 106, 0.08);
+
+  box-shadow:
+    0 0 30px rgba(214, 182, 106, 0.08);
 }
 
-.brand-mark.small { width: 30px; height: 30px; font-size: 17px; }
 
-.brand strong, .brand small { display: block; }
-.brand strong { font-family: Georgia, serif; font-size: 18px; letter-spacing: .02em; }
-.brand small { color: var(--muted); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; margin-top: 2px; }
+/*
+ * Smaller version used in the footer.
+ */
+.brand-mark.small {
+  width: 30px;
+  height: 30px;
+  font-size: 17px;
+}
 
-.nav-links { display: flex; gap: 30px; color: var(--muted); font-size: 13px; }
-.nav-links a:hover { color: var(--gold-soft); }
 
-.header-actions { display: flex; gap: 8px; }
+/*
+ * Brand title and subtitle are displayed vertically.
+ */
+.brand strong,
+.brand small {
+  display: block;
+}
+
+
+/*
+ * Main brand name uses a serif font to create a more traditional
+ * visual identity.
+ */
+.brand strong {
+  font-family: Georgia, serif;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+}
+
+
+/*
+ * Small uppercase brand subtitle.
+ */
+.brand small {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+
+/*
+ * ============================================================
+ * DESKTOP NAVIGATION
+ * ============================================================
+ */
+
+.nav-links {
+  display: flex;
+  gap: 30px;
+
+  color: var(--muted);
+  font-size: 13px;
+}
+
+
+/*
+ * Navigation hover effect.
+ */
+.nav-links a:hover {
+  color: var(--gold-soft);
+}
+
+
+/*
+ * Header action buttons.
+ */
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+
+/*
+ * Circular theme/menu buttons.
+ */
 .icon-button {
-  width: 40px; height: 40px; border-radius: 50%;
-  border: 1px solid var(--border); background: var(--panel); color: var(--text);
-  display: grid; place-items: center;
+  width: 40px;
+  height: 40px;
+
+  border-radius: 50%;
+  border: 1px solid var(--border);
+
+  background: var(--panel);
+  color: var(--text);
+
+  display: grid;
+  place-items: center;
 }
-.mobile-menu { display: none; }
+
+
+/*
+ * Mobile menu is hidden on desktop.
+ */
+.mobile-menu {
+  display: none;
+}
+
+
+/*
+ * ============================================================
+ * HERO SECTION
+ * ============================================================
+ */
 
 .hero {
   position: relative;
   z-index: 1;
+
   max-width: 900px;
+
   margin: 0 auto;
+
   padding: 75px 20px 80px;
+
   text-align: center;
 }
 
-.hero-ornament { color: var(--gold); font-size: 18px; margin-bottom: 15px; animation: float 5s ease-in-out infinite; }
-.eyebrow, .section-kicker {
-  display: inline-flex; align-items: center; gap: 7px;
-  margin: 0 0 16px; color: var(--gold); text-transform: uppercase;
-  letter-spacing: .18em; font-size: 10px; font-weight: 700;
+
+/*
+ * Small decorative star above the hero heading.
+ */
+.hero-ornament {
+  color: var(--gold);
+  font-size: 18px;
+
+  margin-bottom: 15px;
+
+  animation:
+    float 5s ease-in-out infinite;
 }
-.hero h1, .section-heading h2, .workspace-head h2, .feature-panel h2 {
-  font-family: Georgia, "Times New Roman", serif;
+
+
+/*
+ * Small uppercase labels used throughout the application.
+ */
+.eyebrow,
+.section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  margin: 0 0 16px;
+
+  color: var(--gold);
+
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+
+/*
+ * Serif headings provide visual contrast with the modern UI.
+ */
+.hero h1,
+.section-heading h2,
+.workspace-head h2,
+.feature-panel h2 {
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
   font-weight: 500;
 }
+
+
+/*
+ * Main hero heading.
+ */
 .hero h1 {
   margin: 0;
+
+  /*
+   * Responsive font size:
+   *
+   * Minimum: 46px
+   * Preferred: 7vw
+   * Maximum: 84px
+   */
   font-size: clamp(46px, 7vw, 84px);
-  line-height: .98;
-  letter-spacing: -.045em;
+
+  line-height: 0.98;
+
+  letter-spacing: -0.045em;
 }
-.hero h1 span, .feature-panel h2 span { color: var(--gold-soft); }
+
+
+/*
+ * Gold highlight used in the main heading.
+ */
+.hero h1 span,
+.feature-panel h2 span {
+  color: var(--gold-soft);
+}
+
+
+/*
+ * Hero description.
+ */
 .hero-copy {
   max-width: 650px;
+
   margin: 24px auto 30px;
+
   color: var(--muted);
+
   font-size: 16px;
   line-height: 1.8;
 }
+
+
+/*
+ * ============================================================
+ * SEARCH BOX
+ * ============================================================
+ */
 
 .search-box {
   display: flex;
   align-items: center;
   gap: 13px;
+
   width: min(780px, 100%);
+
   margin: 0 auto;
+
   padding: 7px 7px 7px 20px;
+
   border: 1px solid var(--border);
   border-radius: 18px;
-  background: rgba(8, 27, 22, 0.74);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 18px 60px rgba(0,0,0,.18), inset 0 1px rgba(255,255,255,.03);
-}
-:root[data-theme="light"] .search-box { background: rgba(255,255,255,.76); }
-.search-box > svg { color: var(--gold); flex: 0 0 auto; }
-.search-box input {
-  flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
-  color: var(--text); font-size: 16px;
-}
-.search-box input::placeholder { color: var(--muted); }
-.search-box button {
-  border: 0; border-radius: 13px; padding: 13px 21px;
-  background: var(--gold); color: #10261d; font-weight: 800;
-}
-.search-box button:disabled { opacity: .5; cursor: not-allowed; }
 
-.popular-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 17px; color: var(--muted); font-size: 12px; }
-.popular-row button {
-  border: 0; color: var(--gold-soft); background: transparent; padding: 4px 5px;
+  /*
+   * Semi-transparent glass-style background.
+   */
+  background: rgba(8, 27, 22, 0.74);
+
+  /*
+   * Blur content behind the search box where supported.
+   */
+  backdrop-filter: blur(18px);
+
+  box-shadow:
+    0 18px 60px rgba(0, 0, 0, 0.18),
+    inset 0 1px rgba(255, 255, 255, 0.03);
 }
-.popular-row button:hover { text-decoration: underline; }
+
+
+/*
+ * Search box background for light mode.
+ */
+:root[data-theme="light"] .search-box {
+  background: rgba(255, 255, 255, 0.76);
+}
+
+
+/*
+ * Search icon.
+ */
+.search-box > svg {
+  color: var(--gold);
+  flex: 0 0 auto;
+}
+
+
+/*
+ * Search input.
+ */
+.search-box input {
+  flex: 1;
+
+  min-width: 0;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: var(--text);
+
+  font-size: 16px;
+}
+
+
+/*
+ * Search placeholder color.
+ */
+.search-box input::placeholder {
+  color: var(--muted);
+}
+
+
+/*
+ * Search submit button.
+ */
+.search-box button {
+  border: 0;
+
+  border-radius: 13px;
+
+  padding: 13px 21px;
+
+  background: var(--gold);
+
+  color: #10261d;
+
+  font-weight: 800;
+}
+
+
+/*
+ * Disabled search button.
+ */
+.search-box button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+/*
+ * ============================================================
+ * POPULAR SEARCHES
+ * ============================================================
+ */
+
+.popular-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  margin-top: 17px;
+
+  color: var(--muted);
+  font-size: 12px;
+}
+
+
+.popular-row button {
+  border: 0;
+
+  color: var(--gold-soft);
+
+  background: transparent;
+
+  padding: 4px 5px;
+}
+
+
+.popular-row button:hover {
+  text-decoration: underline;
+}
+
+
+/*
+ * ============================================================
+ * HERO STATISTICS
+ * ============================================================
+ */
 
 .hero-stats {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  width: min(700px, 100%); margin: 52px auto 0;
-  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
-}
-.hero-stats div { padding: 17px 8px; border-right: 1px solid var(--border); }
-.hero-stats div:last-child { border-right: 0; }
-.hero-stats strong, .hero-stats span { display: block; }
-.hero-stats strong { font-family: Georgia, serif; color: var(--gold-soft); font-size: 14px; }
-.hero-stats span { color: var(--muted); font-size: 10px; margin-top: 4px; }
+  display: grid;
 
-.search-workspace, .topics-section, .features-section, .sources-section {
-  position: relative; z-index: 2;
-  width: min(1120px, calc(100% - 40px)); margin: 0 auto;
-}
-.search-workspace { padding: 38px 0 90px; }
-.workspace-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
-.workspace-head h2, .section-heading h2 { margin: 0; font-size: clamp(27px, 4vw, 42px); }
-.clear-button { border: 0; color: var(--muted); background: transparent; font-size: 12px; }
+  grid-template-columns: repeat(4, 1fr);
 
-.filter-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
-.filter-chip, .mode-chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  border: 1px solid var(--border); background: var(--panel); color: var(--muted);
-  border-radius: 999px; padding: 9px 14px; font-size: 12px;
-}
-.filter-chip.active, .mode-chip.active { background: rgba(214,182,106,.12); border-color: rgba(214,182,106,.45); color: var(--gold-soft); }
-.filter-divider { width: 1px; height: 24px; background: var(--border); margin: 0 5px; }
+  width: min(700px, 100%);
 
-.ai-status, .error-box {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 18px; padding: 12px 15px;
-  border-radius: 12px; font-size: 12px;
-}
-.ai-status { color: var(--gold-soft); background: rgba(214,182,106,.08); border: 1px solid var(--border); }
-.error-box { color: #ffc6c6; background: rgba(150,40,40,.14); border: 1px solid rgba(255,120,120,.2); }
+  margin: 52px auto 0;
 
-.result-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+
+/*
+ * Individual statistics.
+ */
+.hero-stats div {
+  padding: 17px 8px;
+
+  border-right: 1px solid var(--border);
+}
+
+
+/*
+ * Remove the right border from the final item.
+ */
+.hero-stats div:last-child {
+  border-right: 0;
+}
+
+
+.hero-stats strong,
+.hero-stats span {
+  display: block;
+}
+
+
+.hero-stats strong {
+  font-family: Georgia, serif;
+
+  color: var(--gold-soft);
+
+  font-size: 14px;
+}
+
+
+.hero-stats span {
+  color: var(--muted);
+
+  font-size: 10px;
+
+  margin-top: 4px;
+}
+
+
+/*
+ * ============================================================
+ * MAIN CONTENT CONTAINERS
+ * ============================================================
+ *
+ * These sections share the same responsive maximum width.
+ */
+.search-workspace,
+.topics-section,
+.features-section,
+.sources-section {
+  position: relative;
+  z-index: 2;
+
+  width: min(1120px, calc(100% - 40px));
+
+  margin: 0 auto;
+}
+
+
+/*
+ * ============================================================
+ * SEARCH WORKSPACE
+ * ============================================================
+ */
+
+.search-workspace {
+  padding: 38px 0 90px;
+}
+
+
+/*
+ * Search workspace heading and clear button.
+ */
+.workspace-head {
+  display: flex;
+
+  align-items: end;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin-bottom: 24px;
+}
+
+
+.workspace-head h2,
+.section-heading h2 {
+  margin: 0;
+
+  font-size: clamp(27px, 4vw, 42px);
+}
+
+
+/*
+ * Clear results button.
+ */
+.clear-button {
+  border: 0;
+
+  color: var(--muted);
+
+  background: transparent;
+
+  font-size: 12px;
+}
+
+
+/*
+ * ============================================================
+ * SEARCH FILTERS
+ * ============================================================
+ */
+
+.filter-row {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  flex-wrap: wrap;
+
+  margin-bottom: 24px;
+}
+
+
+/*
+ * Shared appearance for source filters and search modes.
+ */
+.filter-chip,
+.mode-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  border: 1px solid var(--border);
+
+  background: var(--panel);
+
+  color: var(--muted);
+
+  border-radius: 999px;
+
+  padding: 9px 14px;
+
+  font-size: 12px;
+}
+
+
+/*
+ * Active filter/mode state.
+ */
+.filter-chip.active,
+.mode-chip.active {
+  background: rgba(214, 182, 106, 0.12);
+
+  border-color: rgba(214, 182, 106, 0.45);
+
+  color: var(--gold-soft);
+}
+
+
+/*
+ * Vertical separator between source filters and AI modes.
+ */
+.filter-divider {
+  width: 1px;
+  height: 24px;
+
+  background: var(--border);
+
+  margin: 0 5px;
+}
+
+
+/*
+ * ============================================================
+ * AI STATUS AND ERROR MESSAGES
+ * ============================================================
+ */
+
+.ai-status,
+.error-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  margin-bottom: 18px;
+
+  padding: 12px 15px;
+
+  border-radius: 12px;
+
+  font-size: 12px;
+}
+
+
+/*
+ * Browser AI status message.
+ */
+.ai-status {
+  color: var(--gold-soft);
+
+  background: rgba(214, 182, 106, 0.08);
+
+  border: 1px solid var(--border);
+}
+
+
+/*
+ * Search error message.
+ */
+.error-box {
+  color: #ffc6c6;
+
+  background: rgba(150, 40, 40, 0.14);
+
+  border: 1px solid rgba(255, 120, 120, 0.2);
+}
+
+
+/*
+ * ============================================================
+ * RESULT GRID
+ * ============================================================
+ */
+
+.result-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 16px;
+}
+
+
+/*
+ * ============================================================
+ * RESULT CARD
+ * ============================================================
+ */
+
 .result-card {
-  border: 1px solid var(--border); background: var(--panel); border-radius: 20px;
-  padding: 21px; box-shadow: var(--shadow); backdrop-filter: blur(14px);
-  transition: transform .2s ease, border-color .2s ease;
-}
-.result-card:hover { transform: translateY(-2px); border-color: rgba(214,182,106,.4); }
-.result-card.quran { border-top: 2px solid rgba(109,211,164,.5); }
-.result-card.hadith { border-top: 2px solid rgba(214,182,106,.55); }
-.result-card.web { border-top: 2px solid rgba(130,160,220,.5); }
+  border: 1px solid var(--border);
 
-.result-topline { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+  background: var(--panel);
+
+  border-radius: 20px;
+
+  padding: 21px;
+
+  box-shadow: var(--shadow);
+
+  backdrop-filter: blur(14px);
+
+  /*
+   * Small hover animation.
+   */
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+
+/*
+ * Lift the card slightly when the pointer moves over it.
+ */
+.result-card:hover {
+  transform: translateY(-2px);
+
+  border-color:
+    rgba(214, 182, 106, 0.4);
+}
+
+
+/*
+ * Different top-border colors identify the source type.
+ *
+ * Quran    = emerald
+ * Hadith   = gold
+ * Web      = blue
+ */
+.result-card.quran {
+  border-top:
+    2px solid rgba(109, 211, 164, 0.5);
+}
+
+
+.result-card.hadith {
+  border-top:
+    2px solid rgba(214, 182, 106, 0.55);
+}
+
+
+.result-card.web {
+  border-top:
+    2px solid rgba(130, 160, 220, 0.5);
+}
+
+
+/*
+ * ============================================================
+ * RESULT HEADER
+ * ============================================================
+ */
+
+.result-topline {
+  display: flex;
+
+  justify-content: space-between;
+
+  gap: 10px;
+
+  align-items: center;
+}
+
+
+/*
+ * Quran/Hadith/Web source badge.
+ */
 .source-badge {
-  color: var(--gold-soft); font-size: 9px; font-weight: 800; letter-spacing: .16em;
-  padding: 5px 8px; border-radius: 999px; background: rgba(214,182,106,.08);
+  color: var(--gold-soft);
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.16em;
+
+  padding: 5px 8px;
+
+  border-radius: 999px;
+
+  background: rgba(214, 182, 106, 0.08);
 }
-.result-reference { color: var(--muted); font-size: 10px; text-align: right; }
-.result-card h3 { margin: 17px 0 3px; font-family: Georgia, serif; font-size: 22px; font-weight: 500; }
-.result-subtitle { margin: 0 0 12px; color: var(--muted); font-size: 11px; }
-.arabic-text { font-family: "Times New Roman", serif; font-size: 25px; line-height: 2; color: var(--gold-soft); margin: 17px 0; }
-.result-text { color: var(--text); line-height: 1.75; font-size: 14px; margin: 0; }
-.result-meta { display: flex; justify-content: space-between; gap: 10px; margin-top: 17px; color: var(--muted); font-size: 10px; }
-.result-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
-.result-actions a, .result-actions button {
-  display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border);
-  background: transparent; color: var(--muted); border-radius: 9px; padding: 8px 10px; font-size: 11px;
+
+
+/*
+ * Result reference number or title.
+ */
+.result-reference {
+  color: var(--muted);
+
+  font-size: 10px;
+
+  text-align: right;
 }
-.result-actions a { color: var(--gold-soft); }
-.result-actions button:hover, .result-actions button.bookmarked { color: var(--gold); border-color: rgba(214,182,106,.5); }
+
+
+/*
+ * Result heading.
+ */
+.result-card h3 {
+  margin: 17px 0 3px;
+
+  font-family: Georgia, serif;
+
+  font-size: 22px;
+
+  font-weight: 500;
+}
+
+
+/*
+ * Optional result subtitle.
+ */
+.result-subtitle {
+  margin: 0 0 12px;
+
+  color: var(--muted);
+
+  font-size: 11px;
+}
+
+
+/*
+ * ============================================================
+ * ARABIC RESULT TEXT
+ * ============================================================
+ */
+
+.arabic-text {
+  font-family:
+    "Times New Roman",
+    serif;
+
+  font-size: 25px;
+
+  line-height: 2;
+
+  color: var(--gold-soft);
+
+  margin: 17px 0;
+}
+
+
+/*
+ * Main translated/result text.
+ */
+.result-text {
+  color: var(--text);
+
+  line-height: 1.75;
+
+  font-size: 14px;
+
+  margin: 0;
+}
+
+
+/*
+ * Result source and match metadata.
+ */
+.result-meta {
+  display: flex;
+
+  justify-content: space-between;
+
+  gap: 10px;
+
+  margin-top: 17px;
+
+  color: var(--muted);
+
+  font-size: 10px;
+}
+
+
+/*
+ * ============================================================
+ * RESULT ACTION BUTTONS
+ * ============================================================
+ */
+
+.result-actions {
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 8px;
+
+  margin-top: 18px;
+}
+
+
+/*
+ * Shared style for source/copy/bookmark actions.
+ */
+.result-actions a,
+.result-actions button {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  border: 1px solid var(--border);
+
+  background: transparent;
+
+  color: var(--muted);
+
+  border-radius: 9px;
+
+  padding: 8px 10px;
+
+  font-size: 11px;
+}
+
+
+/*
+ * Open source action uses the gold accent.
+ */
+.result-actions a {
+  color: var(--gold-soft);
+}
+
+
+/*
+ * Hover and active bookmark state.
+ */
+.result-actions button:hover,
+.result-actions button.bookmarked {
+  color: var(--gold);
+
+  border-color:
+    rgba(214, 182, 106, 0.5);
+}
+
+
+/*
+ * ============================================================
+ * EMPTY STATE
+ * ============================================================
+ */
 
 .empty-state {
-  min-height: 230px; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; border: 1px dashed var(--border); border-radius: 22px; background: rgba(255,255,255,.015);
+  min-height: 230px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  text-align: center;
+
+  border: 1px dashed var(--border);
+
+  border-radius: 22px;
+
+  background: rgba(255, 255, 255, 0.015);
+
   padding: 30px;
 }
-.empty-state svg { color: var(--gold); }
-.empty-moon { font-size: 42px; color: var(--gold); }
-.empty-state h3 { margin: 13px 0 5px; font-family: Georgia, serif; font-size: 23px; }
-.empty-state p { margin: 0; color: var(--muted); font-size: 13px; }
-.history-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin-top: 15px; }
-.history-list button { border: 1px solid var(--border); border-radius: 999px; padding: 8px 12px; background: var(--panel); color: var(--muted); font-size: 11px; }
 
-.topics-section { padding: 50px 0 100px; }
-.section-heading { max-width: 650px; margin-bottom: 25px; }
-.section-heading p:last-child { color: var(--muted); line-height: 1.7; font-size: 14px; }
-.topic-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+.empty-state svg {
+  color: var(--gold);
+}
+
+
+.empty-moon {
+  font-size: 42px;
+
+  color: var(--gold);
+}
+
+
+.empty-state h3 {
+  margin: 13px 0 5px;
+
+  font-family: Georgia, serif;
+
+  font-size: 23px;
+}
+
+
+.empty-state p {
+  margin: 0;
+
+  color: var(--muted);
+
+  font-size: 13px;
+}
+
+
+/*
+ * Recent search history buttons.
+ */
+.history-list {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  margin-top: 15px;
+}
+
+
+.history-list button {
+  border: 1px solid var(--border);
+
+  border-radius: 999px;
+
+  padding: 8px 12px;
+
+  background: var(--panel);
+
+  color: var(--muted);
+
+  font-size: 11px;
+}
+
+
+/*
+ * ============================================================
+ * TOPICS SECTION
+ * ============================================================
+ */
+
+.topics-section {
+  padding: 50px 0 100px;
+}
+
+
+.section-heading {
+  max-width: 650px;
+
+  margin-bottom: 25px;
+}
+
+
+/*
+ * Description under section headings.
+ */
+.section-heading p:last-child {
+  color: var(--muted);
+
+  line-height: 1.7;
+
+  font-size: 14px;
+}
+
+
+/*
+ * Topic cards use a three-column desktop layout.
+ */
+.topic-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, 1fr);
+
+  gap: 12px;
+}
+
+
+/*
+ * Individual topic button/card.
+ */
 .topic-card {
-  text-align: left; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 13px;
-  padding: 18px; border: 1px solid var(--border); border-radius: 17px; background: var(--panel); color: var(--text);
-}
-.topic-card:hover { border-color: rgba(214,182,106,.4); }
-.topic-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: rgba(214,182,106,.08); color: var(--gold); }
-.topic-card strong, .topic-card small { display: block; }
-.topic-card strong { font-family: Georgia, serif; font-size: 17px; }
-.topic-card small { margin-top: 5px; color: var(--muted); line-height: 1.5; font-size: 11px; }
-.topic-card > svg { color: var(--muted); }
+  text-align: left;
 
-.features-section { padding: 10px 0 100px; }
+  display: grid;
+
+  grid-template-columns:
+    auto 1fr auto;
+
+  align-items: center;
+
+  gap: 13px;
+
+  padding: 18px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 17px;
+
+  background: var(--panel);
+
+  color: var(--text);
+}
+
+
+.topic-card:hover {
+  border-color:
+    rgba(214, 182, 106, 0.4);
+}
+
+
+/*
+ * Circular topic icon.
+ */
+.topic-icon {
+  display: grid;
+
+  place-items: center;
+
+  width: 38px;
+  height: 38px;
+
+  border-radius: 50%;
+
+  background:
+    rgba(214, 182, 106, 0.08);
+
+  color: var(--gold);
+}
+
+
+.topic-card strong,
+.topic-card small {
+  display: block;
+}
+
+
+.topic-card strong {
+  font-family: Georgia, serif;
+
+  font-size: 17px;
+}
+
+
+.topic-card small {
+  margin-top: 5px;
+
+  color: var(--muted);
+
+  line-height: 1.5;
+
+  font-size: 11px;
+}
+
+
+.topic-card > svg {
+  color: var(--muted);
+}
+
+
+/*
+ * ============================================================
+ * FEATURES / ABOUT SECTION
+ * ============================================================
+ */
+
+.features-section {
+  padding: 10px 0 100px;
+}
+
+
+/*
+ * Main feature panel.
+ *
+ * The left side contains the main message.
+ * The right side contains individual features.
+ */
 .feature-panel {
-  display: grid; grid-template-columns: .9fr 1.1fr; gap: 60px; padding: 48px;
-  border: 1px solid var(--border); border-radius: 25px;
-  background: linear-gradient(135deg, rgba(109,211,164,.07), rgba(214,182,106,.04));
-}
-.feature-panel h2 { font-size: clamp(30px, 4vw, 50px); line-height: 1.04; margin: 0 0 17px; }
-.feature-panel > div:first-child p:last-child { color: var(--muted); line-height: 1.8; font-size: 14px; }
-.feature-list { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.feature-item { display: flex; gap: 12px; }
-.feature-item > span { color: var(--gold); }
-.feature-item strong, .feature-item small { display: block; }
-.feature-item strong { font-size: 13px; }
-.feature-item small { margin-top: 5px; color: var(--muted); line-height: 1.55; font-size: 11px; }
+  display: grid;
 
-.sources-section { padding: 0 0 100px; }
-.source-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-.source-box { padding: 20px; border: 1px solid var(--border); border-radius: 17px; background: var(--panel); }
-.source-box:hover { border-color: rgba(214,182,106,.4); }
-.source-box strong { font-family: Georgia, serif; font-size: 16px; }
-.source-box p { color: var(--muted); font-size: 11px; line-height: 1.65; min-height: 58px; }
-.source-box span { display: flex; align-items: center; gap: 5px; color: var(--gold-soft); font-size: 10px; }
+  grid-template-columns:
+    0.9fr 1.1fr;
+
+  gap: 60px;
+
+  padding: 48px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 25px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(109, 211, 164, 0.07),
+      rgba(214, 182, 106, 0.04)
+    );
+}
+
+
+/*
+ * Main feature heading.
+ */
+.feature-panel h2 {
+  font-size: clamp(30px, 4vw, 50px);
+
+  line-height: 1.04;
+
+  margin: 0 0 17px;
+}
+
+
+/*
+ * Main feature description.
+ */
+.feature-panel > div:first-child p:last-child {
+  color: var(--muted);
+
+  line-height: 1.8;
+
+  font-size: 14px;
+}
+
+
+/*
+ * Feature items use a two-column layout on larger screens.
+ */
+.feature-list {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 20px;
+}
+
+
+/*
+ * Individual feature.
+ */
+.feature-item {
+  display: flex;
+
+  gap: 12px;
+}
+
+
+/*
+ * Feature icon.
+ */
+.feature-item > span {
+  color: var(--gold);
+}
+
+
+.feature-item strong,
+.feature-item small {
+  display: block;
+}
+
+
+.feature-item strong {
+  font-size: 13px;
+}
+
+
+.feature-item small {
+  margin-top: 5px;
+
+  color: var(--muted);
+
+  line-height: 1.55;
+
+  font-size: 11px;
+}
+
+
+/*
+ * ============================================================
+ * SOURCES SECTION
+ * ============================================================
+ */
+
+.sources-section {
+  padding: 0 0 100px;
+}
+
+
+/*
+ * Four source cards on desktop.
+ */
+.source-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 12px;
+}
+
+
+/*
+ * External source card.
+ */
+.source-box {
+  padding: 20px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 17px;
+
+  background: var(--panel);
+}
+
+
+.source-box:hover {
+  border-color:
+    rgba(214, 182, 106, 0.4);
+}
+
+
+.source-box strong {
+  font-family: Georgia, serif;
+
+  font-size: 16px;
+}
+
+
+.source-box p {
+  color: var(--muted);
+
+  font-size: 11px;
+
+  line-height: 1.65;
+
+  /*
+   * Keeps source cards visually similar in height.
+   */
+  min-height: 58px;
+}
+
+
+.source-box span {
+  display: flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  color: var(--gold-soft);
+
+  font-size: 10px;
+}
+
+
+/*
+ * ============================================================
+ * FOOTER
+ * ============================================================
+ */
 
 .site-footer {
-  position: relative; z-index: 2; width: min(1120px, calc(100% - 40px)); margin: 0 auto;
-  padding: 24px 0 35px; border-top: 1px solid var(--border);
-  display: flex; justify-content: space-between; gap: 20px; color: var(--muted); font-size: 10px;
-}
-.site-footer > div { display: flex; align-items: center; gap: 8px; color: var(--gold-soft); }
+  position: relative;
 
-.ambient { position: absolute; border-radius: 50%; filter: blur(70px); pointer-events: none; opacity: .12; }
-.ambient-one { width: 300px; height: 300px; background: #2c9d70; top: 200px; left: -160px; }
-.ambient-two { width: 250px; height: 250px; background: #b58c34; top: 500px; right: -130px; }
+  z-index: 2;
 
-.star-field { position: absolute; inset: 0; pointer-events: none; overflow: hidden; opacity: .35; }
-.star { position: absolute; left: calc((var(--i) * 37) % 100 * 1%); top: calc((var(--i) * 61) % 75 * 1%); width: 2px; height: 2px; border-radius: 50%; background: var(--gold); animation: twinkle calc(2s + (var(--i) * .17s)) ease-in-out infinite alternate; }
+  width: min(1120px, calc(100% - 40px));
 
-.skeleton { min-height: 280px; }
-.skeleton span { display: block; height: 12px; margin: 15px 0; border-radius: 8px; background: linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.11), rgba(255,255,255,.04)); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
-.skeleton span:nth-child(2) { width: 75%; }
-.skeleton span:nth-child(3) { width: 92%; margin-top: 40px; }
-.skeleton span:nth-child(4) { width: 60%; }
+  margin: 0 auto;
 
-@keyframes twinkle { from { opacity: .18; transform: scale(.7); } to { opacity: .85; transform: scale(1.25); } }
-@keyframes shimmer { to { background-position: -200% 0; } }
-@keyframes float { 50% { transform: translateY(-5px); } }
+  padding: 24px 0 35px;
 
-@media (max-width: 900px) {
-  .nav-links { gap: 17px; }
-  .result-grid, .feature-panel { grid-template-columns: 1fr; }
-  .feature-panel { gap: 30px; }
-  .topic-grid { grid-template-columns: repeat(2, 1fr); }
-  .source-grid { grid-template-columns: repeat(2, 1fr); }
+  border-top: 1px solid var(--border);
+
+  display: flex;
+
+  justify-content: space-between;
+
+  gap: 20px;
+
+  color: var(--muted);
+
+  font-size: 10px;
 }
 
-@media (max-width: 700px) {
-  .site-header { width: min(100% - 28px, 1180px); height: 70px; }
-  .nav-links {
-    display: none; position: absolute; top: 62px; left: 0; right: 0;
-    flex-direction: column; padding: 14px; border: 1px solid var(--border);
-    border-radius: 16px; background: var(--panel-strong); box-shadow: var(--shadow);
+
+/*
+ * Footer brand section.
+ */
+.site-footer > div {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  color: var(--gold-soft);
+}
+
+
+/*
+ * ============================================================
+ * AMBIENT BACKGROUND EFFECTS
+ * ============================================================
+ *
+ * These blurred circles create subtle atmospheric lighting.
+ */
+
+.ambient {
+  position: absolute;
+
+  border-radius: 50%;
+
+  filter: blur(70px);
+
+  pointer-events: none;
+
+  opacity: 0.12;
+}
+
+
+/*
+ * Emerald atmospheric glow.
+ */
+.ambient-one {
+  width: 300px;
+  height: 300px;
+
+  background: #2c9d70;
+
+  top: 200px;
+  left: -160px;
+}
+
+
+/*
+ * Gold atmospheric glow.
+ */
+.ambient-two {
+  width: 250px;
+  height: 250px;
+
+  background: #b58c34;
+
+  top: 500px;
+  right: -130px;
+}
+
+
+/*
+ * ============================================================
+ * STAR FIELD
+ * ============================================================
+ */
+
+.star-field {
+  position: absolute;
+
+  inset: 0;
+
+  pointer-events: none;
+
+  overflow: hidden;
+
+  opacity: 0.35;
+}
+
+
+/*
+ * Individual decorative stars.
+ *
+ * The React component supplies the --i custom property.
+ * CSS uses that value to distribute stars across the page.
+ */
+.star {
+  position: absolute;
+
+  left:
+    calc(
+      (var(--i) * 37) % 100 * 1%
+    );
+
+  top:
+    calc(
+      (var(--i) * 61) % 75 * 1%
+    );
+
+  width: 2px;
+  height: 2px;
+
+  border-radius: 50%;
+
+  background: var(--gold);
+
+  animation:
+    twinkle
+    calc(2s + (var(--i) * 0.17s))
+    ease-in-out
+    infinite
+    alternate;
+}
+
+
+/*
+ * ============================================================
+ * SKELETON LOADING CARDS
+ * ============================================================
+ *
+ * Shown while Quran, Hadith, or web sources are loading.
+ */
+
+.skeleton {
+  min-height: 280px;
+}
+
+
+/*
+ * Individual skeleton placeholder line.
+ */
+.skeleton span {
+  display: block;
+
+  height: 12px;
+
+  margin: 15px 0;
+
+  border-radius: 8px;
+
+  /*
+   * Animated gradient creates a loading shimmer.
+   */
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.04),
+      rgba(255, 255, 255, 0.11),
+      rgba(255, 255, 255, 0.04)
+    );
+
+  background-size: 200% 100%;
+
+  animation:
+    shimmer 1.5s infinite;
+}
+
+
+/*
+ * Different widths make the skeleton look more natural.
+ */
+.skeleton span:nth-child(2) {
+  width: 75%;
+}
+
+
+.skeleton span:nth-child(3) {
+  width: 92%;
+
+  margin-top: 40px;
+}
+
+
+.skeleton span:nth-child(4) {
+  width: 60%;
+}
+
+
+/*
+ * ============================================================
+ * ANIMATIONS
+ * ============================================================
+ */
+
+
+/*
+ * Stars slowly brighten and enlarge.
+ */
+@keyframes twinkle {
+  from {
+    opacity: 0.18;
+
+    transform: scale(0.7);
   }
-  .nav-links.open { display: flex; }
-  .mobile-menu { display: grid; }
-  .hero { padding: 55px 14px 60px; }
-  .hero h1 { font-size: clamp(42px, 13vw, 62px); }
-  .hero-copy { font-size: 14px; }
-  .search-box { padding-left: 14px; }
-  .search-box button { padding: 12px 14px; }
-  .hero-stats { grid-template-columns: repeat(2, 1fr); }
-  .hero-stats div:nth-child(2) { border-right: 0; }
-  .hero-stats div:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
-  .search-workspace, .topics-section, .features-section, .sources-section { width: min(100% - 28px, 1120px); }
-  .workspace-head { align-items: flex-start; flex-direction: column; }
-  .filter-row { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
-  .filter-divider { flex: 0 0 1px; }
-  .topic-grid, .source-grid, .feature-list { grid-template-columns: 1fr; }
-  .feature-panel { padding: 27px 21px; }
-  .site-footer { width: min(100% - 28px, 1120px); flex-direction: column; }
+
+  to {
+    opacity: 0.85;
+
+    transform: scale(1.25);
+  }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
+
+/*
+ * Skeleton loading shimmer.
+ */
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
 }
+
+
+/*
+ * Floating hero ornament animation.
+ */
+@keyframes float {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+
+/*
+ * ============================================================
+ * TABLET / SMALL DESKTOP
+ * ============================================================
+ *
+ * At 900px:
+ *
+ * - Result cards become one column.
+ * - Feature panel becomes one column.
+ * - Topic cards become two columns.
+ * - Source cards become two columns.
+ */
+@media (max-width: 900px) {
+
+  /*
+   * Reduce navigation spacing.
+   */
+  .nav-links {
+    gap: 17px;
+  }
+
+  /*
+   * Stack result cards vertically.
+   */
+  .result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /*
+   * Stack the feature panel sections.
+   */
+  .feature-panel {
+    grid-template-columns: 1fr;
+  }
+
+  /*
+   * Reduce the gap after stacking.
+   */
+  .feature-panel {
+    gap: 30px;
+  }
+
+  /*
+   * Two topic columns.
+   */
+  .topic-grid {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  /*
+   * Two source columns.
+   */
+  .source-grid {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+}
+
+
+/*
+ * ============================================================
+ * MOBILE DEVICES
+ * ============================================================
+ *
+ * At 700px and below, the layout becomes optimized for
+ * smartphones.
+ */
+@media (max-width: 700px) {
+
+  /*
+   * Smaller header width and height.
+   */
+  .site-header {
+    width: min(100% - 28px, 1180px);
+
+    height: 70px;
+  }
+
+
+  /*
+   * Mobile navigation starts hidden.
+   *
+   * JavaScript adds the "open" class when the menu button
+   * is pressed.
+   */
+  .nav-links {
+    display: none;
+
+    position: absolute;
+
+    top: 62px;
+
+    left: 0;
+    right: 0;
+
+    flex-direction: column;
+
+    padding: 14px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 16px;
+
+    background: var(--panel-strong);
+
+    box-shadow: var(--shadow);
+  }
+
+
+  /*
+   * Display the mobile navigation when React adds "open".
+   */
+  .nav-links.open {
+    display: flex;
+  }
+
+
+  /*
+   * Display the mobile menu button.
+   */
+  .mobile-menu {
+    display: grid;
+  }
+
+
+  /*
+   * Reduce hero spacing on mobile.
+   */
+  .hero {
+    padding: 55px 14px 60px;
+  }
+
+
+  /*
+   * Responsive mobile hero heading.
+   */
+  .hero h1 {
+    font-size:
+      clamp(42px, 13vw, 62px);
+  }
+
+
+  /*
+   * Smaller hero description.
+   */
+  .hero-copy {
+    font-size: 14px;
+  }
+
+
+  /*
+   * Reduce left padding inside the search box.
+   */
+  .search-box {
+    padding-left: 14px;
+  }
+
+
+  /*
+   * Make the search button slightly more compact.
+   */
+  .search-box button {
+    padding: 12px 14px;
+  }
+
+
+  /*
+   * Hero statistics become a 2x2 grid.
+   */
+  .hero-stats {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+
+  /*
+   * Remove the vertical divider between the second and
+   * third statistics.
+   */
+  .hero-stats div:nth-child(2) {
+    border-right: 0;
+  }
+
+
+  /*
+   * Add horizontal dividers between the two rows.
+   */
+  .hero-stats div:nth-child(-n + 2) {
+    border-bottom:
+      1px solid var(--border);
+  }
+
+
+  /*
+   * Reduce the width of the main content containers.
+   */
+  .search-workspace,
+  .topics-section,
+  .features-section,
+  .sources-section {
+    width:
+      min(100% - 28px, 1120px);
+  }
+
+
+  /*
+   * Stack workspace heading and clear button.
+   */
+  .workspace-head {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+
+  /*
+   * Allow filters to scroll horizontally instead of wrapping
+   * into multiple lines on small screens.
+   */
+  .filter-row {
+    overflow-x: auto;
+
+    flex-wrap: nowrap;
+
+    padding-bottom: 4px;
+  }
+
+
+  /*
+   * Prevent the divider from shrinking while the filter row
+   * scrolls horizontally.
+   */
+  .filter-divider {
+    flex: 0 0 1px;
+  }
+
+
+  /*
+   * Stack topic cards, source cards, and feature items.
+   */
+  .topic-grid,
+  .source-grid,
+  .feature-list {
+    grid-template-columns: 1fr;
+  }
+
+
+  /*
+   * Reduce the large feature panel padding for mobile.
+   */
+  .feature-panel {
+    padding: 27px 21px;
+  }
+
+
+  /*
+   * Stack footer content vertically.
+   */
+  .site-footer {
+    width:
+      min(100% - 28px, 1120px);
+
+    flex-direction: column;
+  }
+}
+
+
+/*
+ * ============================================================
+ * ACCESSIBILITY — REDUCED MOTION
+ * ============================================================
+ *
+ * Some users prefer reduced motion because animations can cause
+ * discomfort or distraction.
+ *
+ * The browser communicates this preference through:
+ *
+ * prefers-reduced-motion: reduce
+ *
+ * When enabled:
+ *
+ * - Smooth scrolling is disabled.
+ * - Animations are disabled.
+ * - Transitions are disabled.
+ */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+
+    animation: none !important;
+
+    transition: none !important;
+  }
+}
+
