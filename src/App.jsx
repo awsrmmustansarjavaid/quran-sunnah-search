@@ -1,4 +1,49 @@
-import { useEffect, useMemo, useState } from "react";
+/*
+ * ============================================================
+ * NUR SEARCH — MAIN APPLICATION
+ * ============================================================
+ *
+ * Nur Search is a frontend-only Quran and Sunnah search engine.
+ *
+ * Main features:
+ *
+ * - Quran search
+ * - Hadith search
+ * - Wikipedia web discovery
+ * - Optional semantic AI ranking
+ * - Quran/Hadith/Web filtering
+ * - Search history
+ * - Local bookmarks
+ * - Dark/light theme
+ * - Topic discovery
+ * - Responsive interface
+ * - GitHub Pages deployment
+ *
+ * This file contains:
+ *
+ * - Main App component
+ * - SearchBox
+ * - ResultCard
+ * - EmptyState
+ * - SkeletonCard
+ * - Feature
+ * - SourceBox
+ *
+ * External data/API logic is intentionally kept inside:
+ *
+ * src/services/api.js
+ *
+ * This separation keeps the UI and data-fetching logic easier
+ * to maintain.
+ * ============================================================
+ */
+
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import {
   BookOpen,
   Bookmark,
@@ -25,35 +70,91 @@ import {
 } from "./services/api";
 
 import { semanticRank } from "./services/semantic";
+
 import { topics } from "./data/topics";
+
 
 /*
  * ============================================================
- * NUR SEARCH — MAIN APPLICATION COMPONENT
+ * SAFE LOCAL STORAGE HELPERS
  * ============================================================
  *
- * This file contains the main React application and the reusable
- * UI components used by the application.
+ * Browser localStorage is normally reliable, but malformed
+ * stored JSON can cause JSON.parse() to throw.
  *
- * Nur Search is a frontend-only Quran and Sunnah search interface.
+ * These helpers prevent corrupted localStorage data from
+ * crashing the entire React application.
+ */
+
+
+/*
+ * Read a JSON value safely from localStorage.
  *
- * Main responsibilities of this component:
+ * @param {string} key - localStorage key.
+ * @param {*} fallback - Value to use when reading fails.
+ * @returns {*} Parsed value or fallback.
+ */
+function readStorage(
+  key,
+  fallback
+) {
+  try {
+    const value =
+      localStorage.getItem(key);
+
+    if (!value) {
+      return fallback;
+    }
+
+    return JSON.parse(value);
+  } catch {
+    /*
+     * If the saved value is invalid JSON, remove it and return
+     * the safe fallback.
+     */
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Ignore localStorage cleanup errors.
+    }
+
+    return fallback;
+  }
+}
+
+
+/*
+ * Write a JSON value safely to localStorage.
  *
- * - Manage search input and search results.
- * - Search Quran sources.
- * - Search Hadith data.
- * - Search the web.
- * - Optionally rank results using browser-based semantic AI.
- * - Manage Quran/Hadith/Web filters.
- * - Manage dark/light theme.
- * - Store bookmarks in localStorage.
- * - Store search history in localStorage.
- * - Display topics for quick discovery.
- * - Display source and technology information.
+ * If browser storage is unavailable, the application continues
+ * working without persistence.
  *
- * The application does not require its own backend server.
- * It can therefore be deployed as a static application such as
- * GitHub Pages.
+ * @param {string} key - localStorage key.
+ * @param {*} value - Value to store.
+ */
+function writeStorage(
+  key,
+  value
+) {
+  try {
+    localStorage.setItem(
+      key,
+      JSON.stringify(value)
+    );
+  } catch {
+    /*
+     * Storage errors should never break the search interface.
+     *
+     * This can happen if browser storage is disabled or full.
+     */
+  }
+}
+
+
+/*
+ * ============================================================
+ * MAIN APPLICATION COMPONENT
+ * ============================================================
  */
 export default function App() {
   /*
@@ -62,163 +163,228 @@ export default function App() {
    * ============================================================
    */
 
-  // Current text inside the search input.
-  const [query, setQuery] = useState("");
+  /*
+   * Current value inside the search box.
+   */
+  const [query, setQuery] =
+    useState("");
 
-  // The query that was actually submitted by the user.
-  // Keeping this separate allows the UI to distinguish between
-  // typing and an executed search.
-  const [submittedQuery, setSubmittedQuery] = useState("");
+  /*
+   * Query that was actually submitted.
+   *
+   * Keeping this separate from query allows the user to type
+   * without changing the current result heading until Search
+   * is actually submitted.
+   */
+  const [submittedQuery, setSubmittedQuery] =
+    useState("");
 
   /*
    * Search source filter.
    *
-   * Possible values:
-   * - all
-   * - quran
-   * - hadith
-   * - web
+   * Available values:
+   *
+   * all
+   * quran
+   * hadith
+   * web
    */
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] =
+    useState("all");
 
   /*
    * Search ranking mode.
    *
    * hybrid:
-   * Uses the normal search results.
+   * Normal keyword/source search.
    *
    * semantic:
-   * Uses browser-based semantic ranking after retrieving results.
+   * Browser AI semantic ranking.
    */
-  const [mode, setMode] = useState("hybrid");
+  const [mode, setMode] =
+    useState("hybrid");
 
-  // Stores the combined search results displayed on the page.
-  const [results, setResults] = useState([]);
+  /*
+   * Combined search results.
+   */
+  const [results, setResults] =
+    useState([]);
 
-  // Indicates whether the main search operation is running.
-  const [loading, setLoading] = useState(false);
+  /*
+   * Main network/search loading state.
+   */
+  const [loading, setLoading] =
+    useState(false);
 
-  // Indicates whether browser AI is currently ranking results.
-  const [aiLoading, setAiLoading] = useState(false);
+  /*
+   * Browser AI ranking loading state.
+   */
+  const [aiLoading, setAiLoading] =
+    useState(false);
 
-  // Stores a user-friendly search error message.
-  const [error, setError] = useState("");
+  /*
+   * Friendly error message displayed to the user.
+   */
+  const [error, setError] =
+    useState("");
 
   /*
    * ============================================================
    * USER PREFERENCES
    * ============================================================
-   *
-   * These values are stored in localStorage because the application
-   * does not use a backend database.
-   *
-   * The function passed to useState runs only during initialization.
    */
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem("nur-theme") || "dark"
-  );
 
   /*
-   * Load saved bookmarks when the application starts.
-   *
-   * If no bookmarks exist, use an empty array.
+   * Load saved theme safely.
    */
-  const [bookmarks, setBookmarks] = useState(() =>
-    JSON.parse(localStorage.getItem("nur-bookmarks") || "[]")
-  );
+  const [theme, setTheme] =
+    useState(() => {
+      try {
+        return (
+          localStorage.getItem("nur-theme") ||
+          "dark"
+        );
+      } catch {
+        return "dark";
+      }
+    });
 
   /*
-   * Load recent search history from localStorage.
-   *
-   * Search history is intentionally kept inside the user's browser.
+   * Load saved bookmarks safely.
    */
-  const [history, setHistory] = useState(() =>
-    JSON.parse(localStorage.getItem("nur-history") || "[]")
-  );
+  const [bookmarks, setBookmarks] =
+    useState(() => {
+      const saved =
+        readStorage(
+          "nur-bookmarks",
+          []
+        );
 
-  // Controls the mobile navigation menu.
-  const [menuOpen, setMenuOpen] = useState(false);
+      return Array.isArray(saved)
+        ? saved
+        : [];
+    });
 
-  // Stores the ID of the result that was most recently copied.
-  // This allows the UI to temporarily display a check icon.
-  const [copiedId, setCopiedId] = useState("");
+  /*
+   * Load search history safely.
+   */
+  const [history, setHistory] =
+    useState(() => {
+      const saved =
+        readStorage(
+          "nur-history",
+          []
+        );
+
+      return Array.isArray(saved)
+        ? saved
+        : [];
+    });
+
+  /*
+   * Mobile navigation state.
+   */
+  const [menuOpen, setMenuOpen] =
+    useState(false);
+
+  /*
+   * ID of the result that was most recently copied.
+   */
+  const [copiedId, setCopiedId] =
+    useState("");
+
 
   /*
    * ============================================================
    * THEME PERSISTENCE
    * ============================================================
    *
-   * Whenever the theme changes:
-   *
-   * 1. Update the HTML document's data-theme attribute.
-   * 2. Save the preference to localStorage.
-   *
-   * CSS can then use:
-   *
-   * html[data-theme="dark"]
-   * html[data-theme="light"]
+   * Keep the HTML document synchronized with the selected theme.
    */
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem("nur-theme", theme);
+    /*
+     * Update the HTML data-theme attribute.
+     */
+    document.documentElement.dataset.theme =
+      theme;
+
+    /*
+     * Save the preference.
+     */
+    try {
+      localStorage.setItem(
+        "nur-theme",
+        theme
+      );
+    } catch {
+      // Continue without persistence if storage is unavailable.
+    }
   }, [theme]);
+
 
   /*
    * ============================================================
    * BOOKMARK PERSISTENCE
    * ============================================================
-   *
-   * Bookmarks are saved locally so that they remain available
-   * after refreshing the page.
-   *
-   * They are not uploaded to a server.
    */
   useEffect(() => {
-    localStorage.setItem("nur-bookmarks", JSON.stringify(bookmarks));
+    writeStorage(
+      "nur-bookmarks",
+      bookmarks
+    );
   }, [bookmarks]);
+
 
   /*
    * ============================================================
    * SEARCH HISTORY PERSISTENCE
    * ============================================================
-   *
-   * The user's recent searches are stored locally.
    */
   useEffect(() => {
-    localStorage.setItem("nur-history", JSON.stringify(history));
+    writeStorage(
+      "nur-history",
+      history
+    );
   }, [history]);
+
 
   /*
    * ============================================================
    * POPULAR SEARCHES
    * ============================================================
    *
-   * useMemo keeps this array stable between renders.
-   *
-   * These buttons provide quick examples for users who do not
-   * know what to search for.
+   * useMemo keeps this static array stable between renders.
    */
-  const popularSearches = useMemo(
-    () => ["patience", "prayer", "mercy", "charity", "anger"],
-    []
-  );
+  const popularSearches =
+    useMemo(
+      () => [
+        "patience",
+        "prayer",
+        "mercy",
+        "charity",
+        "anger",
+      ],
+      []
+    );
+
 
   /*
    * ============================================================
    * MAIN SEARCH FUNCTION
    * ============================================================
    *
-   * This function coordinates all search sources.
+   * This function:
    *
-   * Depending on the selected filter, it can search:
+   * 1. Validates the query.
+   * 2. Updates the UI.
+   * 3. Starts the required source searches.
+   * 4. Waits for successful/failed sources independently.
+   * 5. Combines available results.
+   * 6. Optionally performs semantic AI ranking.
+   * 7. Displays results.
    *
-   * - Quran
-   * - Hadith
-   * - Web
-   *
-   * Multiple sources are requested concurrently using Promise.all()
-   * so the application does not have to wait for each source
-   * sequentially.
+   * A failure in one external source must NEVER blank the
+   * complete application.
    */
   async function runSearch(
     nextQuery = query,
@@ -226,252 +392,553 @@ export default function App() {
     nextMode = mode
   ) {
     /*
-     * Remove unnecessary whitespace from the query.
-     *
-     * Do nothing if the user submits an empty search.
+     * Safely convert the supplied query to a string.
      */
-    const clean = nextQuery.trim();
+    const clean =
+      String(nextQuery || "").trim();
 
-    if (!clean) return;
+    /*
+     * Ignore empty searches.
+     */
+    if (!clean) {
+      return;
+    }
 
-    // Show the loading state.
+    /*
+     * Start the loading state.
+     */
     setLoading(true);
 
-    // Remove any previous error.
+    /*
+     * Clear previous errors.
+     */
     setError("");
 
-    // Save the submitted query for the results heading.
+    /*
+     * Clear previous results immediately so stale results are
+     * not displayed while the new search is running.
+     */
+    setResults([]);
+
+    /*
+     * Store the submitted query.
+     */
     setSubmittedQuery(clean);
 
-    // Keep the search input synchronized with the submitted query.
+    /*
+     * Keep the search input synchronized.
+     */
     setQuery(clean);
 
-    // Close the mobile menu after starting a search.
+    /*
+     * Close the mobile navigation menu.
+     */
     setMenuOpen(false);
 
     /*
-     * ==========================================================
+     * ========================================================
      * UPDATE SEARCH HISTORY
-     * ==========================================================
-     *
-     * Add the newest search to the beginning.
-     *
-     * filter(item => item !== clean)
-     * prevents duplicate history entries.
-     *
-     * slice(0, 8)
-     * keeps only the latest eight searches.
+     * ========================================================
      */
-    setHistory((previous) =>
-      [clean, ...previous.filter((item) => item !== clean)].slice(0, 8)
+
+    setHistory(
+      (previous) =>
+        [
+          clean,
+          ...previous.filter(
+            (item) => item !== clean
+          ),
+        ].slice(0, 8)
     );
+
 
     try {
       /*
-       * Each search source is added to this array as a Promise.
+       * ========================================================
+       * BUILD SEARCH TASKS
+       * ========================================================
+       *
+       * Each source is represented by a Promise.
+       *
+       * We intentionally do NOT use Promise.all() here.
+       *
+       * Promise.all() rejects the entire group when one promise
+       * rejects unexpectedly.
+       *
+       * Promise.allSettled() allows Quran, Hadith and Web to
+       * succeed or fail independently.
        */
+
       const tasks = [];
 
+
       /*
-       * ========================================================
-       * QURAN SEARCH
-       * ========================================================
-       *
-       * Only search Quran when:
-       *
-       * - All sources are selected, or
-       * - Quran filter is selected.
-       *
-       * If the Quran request fails, return an empty array instead
-       * of stopping the entire search.
+       * --------------------------------------------------------
+       * QURAN TASK
+       * --------------------------------------------------------
        */
-      if (nextFilter === "all" || nextFilter === "quran") {
-        tasks.push(searchQuran(clean).catch(() => []));
-      } else {
-        tasks.push(Promise.resolve([]));
+      if (
+        nextFilter === "all" ||
+        nextFilter === "quran"
+      ) {
+        tasks.push({
+          source: "Quran",
+          promise:
+            searchQuran(clean),
+        });
       }
+
+
+      /*
+       * --------------------------------------------------------
+       * HADITH TASK
+       * --------------------------------------------------------
+       *
+       * Download Bukhari only when the selected filter requires
+       * Hadith.
+       */
+      if (
+        nextFilter === "all" ||
+        nextFilter === "hadith"
+      ) {
+        tasks.push({
+          source: "Hadith",
+          promise:
+            loadHadithEdition(
+              "eng-bukhari"
+            ).then(
+              (data) =>
+                searchHadith(
+                  data,
+                  clean
+                )
+            ),
+        });
+      }
+
+
+      /*
+       * --------------------------------------------------------
+       * WEB TASK
+       * --------------------------------------------------------
+       */
+      if (
+        nextFilter === "all" ||
+        nextFilter === "web"
+      ) {
+        tasks.push({
+          source: "Web",
+          promise:
+            searchWeb(clean),
+        });
+      }
+
 
       /*
        * ========================================================
-       * HADITH SEARCH
+       * WAIT FOR ALL SOURCES
        * ========================================================
-       *
-       * The Bukhari dataset is loaded on demand.
-       *
-       * This helps avoid downloading the Hadith dataset until
-       * the user actually needs it.
        */
-      if (nextFilter === "all" || nextFilter === "hadith") {
-        tasks.push(
-          loadHadithEdition("eng-bukhari")
-            .then((data) => searchHadith(data, clean))
-            .catch(() => [])
+      const settled =
+        await Promise.allSettled(
+          tasks.map(
+            (task) => task.promise
+          )
         );
-      } else {
-        tasks.push(Promise.resolve([]));
-      }
+
 
       /*
        * ========================================================
-       * WEB SEARCH
+       * COLLECT RESULTS
        * ========================================================
-       *
-       * Web discovery is kept as a separate result type so users
-       * can visually distinguish general web material from
-       * Quran and Hadith sources.
        */
-      if (nextFilter === "all" || nextFilter === "web") {
-        tasks.push(searchWeb(clean).catch(() => []));
-      } else {
-        tasks.push(Promise.resolve([]));
-      }
+
+      let combined = [];
+
+      /*
+       * Keep track of sources that failed.
+       *
+       * This allows the UI to show a useful message without
+       * hiding successful results from other sources.
+       */
+      const failedSources = [];
+
+
+      settled.forEach(
+        (result, index) => {
+          /*
+           * Successful source.
+           */
+          if (
+            result.status ===
+            "fulfilled"
+          ) {
+            /*
+             * Make sure the returned value is actually an array.
+             */
+            if (
+              Array.isArray(
+                result.value
+              )
+            ) {
+              combined.push(
+                ...result.value
+              );
+            }
+
+            return;
+          }
+
+          /*
+           * Failed source.
+           */
+          failedSources.push(
+            tasks[index]?.source ||
+              "Search source"
+          );
+        }
+      );
+
 
       /*
        * ========================================================
-       * WAIT FOR ALL SEARCH SOURCES
+       * REMOVE INVALID RESULTS
        * ========================================================
        *
-       * Promise.all() waits for:
-       *
-       * 1. Quran
-       * 2. Hadith
-       * 3. Web
-       *
-       * Each source returns an array.
+       * This additional safety check prevents a malformed source
+       * record from causing rendering problems.
        */
-      const [quranResults, hadithResults, webResults] =
-        await Promise.all(tasks);
+      combined =
+        combined.filter(
+          (result) =>
+            result &&
+            typeof result === "object" &&
+            result.id &&
+            (
+              result.text ||
+              result.title
+            )
+        );
 
-      /*
-       * Combine all source arrays into one result array.
-       */
-      let combined = [
-        ...quranResults,
-        ...hadithResults,
-        ...webResults,
-      ];
 
       /*
        * ========================================================
        * OPTIONAL SEMANTIC AI RANKING
        * ========================================================
        *
-       * Normal/hybrid mode keeps the normal result ordering.
+       * AI ranking is intentionally isolated from the primary
+       * search process.
        *
-       * Semantic mode sends the first eight results to the
-       * browser-based semantic ranking function.
-       *
-       * This allows the application to find results based on
-       * meaning rather than only exact keywords.
+       * If the browser AI model cannot load, the normal search
+       * results remain available.
        */
-      if (nextMode === "semantic" && combined.length) {
+      if (
+        nextMode === "semantic" &&
+        combined.length
+      ) {
+        /*
+         * Show AI loading state.
+         */
         setAiLoading(true);
 
         try {
-          combined = await semanticRank(clean, combined.slice(0, 8));
+          /*
+           * Only send a manageable number of results to the
+           * semantic ranking layer.
+           */
+          const semanticInput =
+            combined.slice(0, 8);
+
+          /*
+           * Try browser-based semantic ranking.
+           */
+          const ranked =
+            await semanticRank(
+              clean,
+              semanticInput
+            );
+
+          /*
+           * Only replace the results if semanticRank actually
+           * returned a valid array.
+           */
+          if (
+            Array.isArray(ranked)
+          ) {
+            combined = ranked;
+          }
+        } catch {
+          /*
+           * IMPORTANT:
+           *
+           * Semantic AI is optional.
+           *
+           * If Transformers.js, the model, browser storage,
+           * WebGPU/WASM or network loading fails, continue with
+           * the normal keyword results.
+           */
+          setError(
+            "Semantic AI was unavailable, so standard search results are shown instead."
+          );
         } finally {
-          // Always remove the AI loading state.
+          /*
+           * Always stop the AI loading state.
+           */
           setAiLoading(false);
         }
       }
 
+
       /*
-       * Display the final result list.
+       * ========================================================
+       * DISPLAY RESULTS
+       * ========================================================
        */
+
       setResults(combined);
+
+
+      /*
+       * ========================================================
+       * SOURCE FAILURE MESSAGE
+       * ========================================================
+       *
+       * If at least one source failed but another source returned
+       * results, show a non-blocking informational message.
+       */
+      if (
+        failedSources.length &&
+        combined.length
+      ) {
+        setError(
+          `${failedSources.join(
+            ", "
+          )} ${
+            failedSources.length === 1
+              ? "source was"
+              : "sources were"
+          } temporarily unavailable. Showing available results.`
+        );
+      }
+
+
+      /*
+       * If every requested source failed, provide a clear error
+       * instead of leaving the user wondering why the screen is
+       * empty.
+       */
+      if (
+        tasks.length > 0 &&
+        failedSources.length ===
+          tasks.length
+      ) {
+        setError(
+          "Search services are temporarily unavailable. Please check your internet connection and try again."
+        );
+      }
     } catch (searchError) {
       /*
        * ========================================================
-       * SEARCH ERROR HANDLING
+       * UNEXPECTED SEARCH ERROR
        * ========================================================
        *
-       * If an unexpected error reaches this point, display a
-       * friendly message instead of breaking the application.
+       * This is a final safety net.
+       *
+       * Even if an unexpected programming/runtime error occurs
+       * during the search process, the React UI should remain
+       * usable.
        */
-      setError(
-        searchError.message || "Search failed. Please try again."
+
+      console.error(
+        "Nur Search error:",
+        searchError
       );
 
+      /*
+       * Clear potentially invalid results.
+       */
       setResults([]);
+
+      /*
+       * Display a friendly error.
+       */
+      setError(
+        searchError?.message ||
+          "Search failed unexpectedly. Please try again."
+      );
+
+      /*
+       * Make sure AI loading is stopped.
+       */
       setAiLoading(false);
     } finally {
       /*
-       * Search has finished regardless of success or failure.
+       * Always stop the main loading state.
        */
       setLoading(false);
     }
   }
 
+
   /*
    * ============================================================
    * BOOKMARK HANDLER
    * ============================================================
-   *
-   * Clicking the bookmark button toggles the selected result.
-   *
-   * If the result already exists:
-   *     remove it.
-   *
-   * Otherwise:
-   *     add it.
    */
   function toggleBookmark(result) {
-    setBookmarks((previous) => {
-      const exists = previous.some(
-        (item) => item.id === result.id
-      );
+    /*
+     * Ignore invalid results.
+     */
+    if (!result?.id) {
+      return;
+    }
 
-      return exists
-        ? previous.filter((item) => item.id !== result.id)
-        : [...previous, result];
-    });
+    setBookmarks(
+      (previous) => {
+        /*
+         * Determine whether this result is already bookmarked.
+         */
+        const exists =
+          previous.some(
+            (item) =>
+              item?.id === result.id
+          );
+
+        /*
+         * Remove an existing bookmark.
+         */
+        if (exists) {
+          return previous.filter(
+            (item) =>
+              item?.id !== result.id
+          );
+        }
+
+        /*
+         * Add a new bookmark.
+         */
+        return [
+          ...previous,
+          result,
+        ];
+      }
+    );
   }
+
 
   /*
    * ============================================================
    * COPY RESULT HANDLER
    * ============================================================
-   *
-   * Copies the source text, reference, and source name to the
-   * user's clipboard.
    */
   async function copyResult(result) {
-    const text = `${result.text}\n\n— ${
-      result.reference || result.title
-    }\nSource: ${result.source}`;
-
-    await navigator.clipboard.writeText(text);
-
     /*
-     * Store the copied result ID so its button can display a
-     * temporary checkmark.
+     * Build the text that should be copied.
      */
-    setCopiedId(result.id);
+    const text =
+      `${result?.text || ""}\n\n` +
+      `— ${
+        result?.reference ||
+        result?.title ||
+        "Nur Search"
+      }\n` +
+      `Source: ${
+        result?.source ||
+        "Unknown"
+      }`;
 
-    /*
-     * Return the icon to its normal state after 1.4 seconds.
-     */
-    window.setTimeout(() => setCopiedId(""), 1400);
+    try {
+      /*
+       * Clipboard API may be unavailable in some browsers or
+       * insecure contexts.
+       */
+      if (
+        !navigator.clipboard ||
+        !navigator.clipboard.writeText
+      ) {
+        throw new Error(
+          "Clipboard access is unavailable."
+        );
+      }
+
+      /*
+       * Copy the result.
+       */
+      await navigator.clipboard.writeText(
+        text
+      );
+
+      /*
+       * Display the copied state.
+       */
+      setCopiedId(
+        result.id
+      );
+
+      /*
+       * Restore the normal icon after a short delay.
+       */
+      window.setTimeout(
+        () =>
+          setCopiedId(""),
+        1400
+      );
+    } catch (copyError) {
+      /*
+       * Log the error for debugging without breaking the app.
+       */
+      console.warn(
+        "Unable to copy result:",
+        copyError
+      );
+
+      /*
+       * Show a useful UI error.
+       */
+      setError(
+        "Unable to copy this result. Please copy the text manually."
+      );
+    }
   }
+
 
   /*
    * ============================================================
    * TOPIC SELECTION
    * ============================================================
-   *
-   * Topic cards provide predefined search queries.
-   *
-   * Example:
-   * "Patience" -> search for "patience"
    */
   function chooseTopic(topic) {
-    setQuery(topic.query);
-    runSearch(topic.query, "all", "hybrid");
+    /*
+     * Verify the topic contains a usable query.
+     */
+    const topicQuery =
+      String(
+        topic?.query || ""
+      ).trim();
+
+    if (!topicQuery) {
+      return;
+    }
+
+    /*
+     * Update the visible search box.
+     */
+    setQuery(topicQuery);
+
+    /*
+     * Immediately search the selected topic.
+     */
+    runSearch(
+      topicQuery,
+      "all",
+      "hybrid"
+    );
   }
+
 
   /*
    * ============================================================
-   * APPLICATION UI
+   * MAIN UI
    * ============================================================
    */
 
@@ -479,70 +946,120 @@ export default function App() {
     <div className="app-shell">
 
       {/* Decorative blurred background element. */}
-      <div className="ambient ambient-one" />
+      <div
+        className="ambient ambient-one"
+        aria-hidden="true"
+      />
 
       {/* Second decorative background element. */}
-      <div className="ambient ambient-two" />
+      <div
+        className="ambient ambient-two"
+        aria-hidden="true"
+      />
 
-      {/*
-       * Decorative star field.
-       *
-       * aria-hidden="true" tells screen readers to ignore these
-       * purely visual elements.
-       */}
-      <div className="star-field" aria-hidden="true">
-        {Array.from({ length: 26 }).map((_, index) => (
+      {/* Decorative star field. */}
+      <div
+        className="star-field"
+        aria-hidden="true"
+      >
+        {Array.from({
+          length: 26,
+        }).map((_, index) => (
           <span
             key={index}
             className="star"
-            style={{ "--i": index }}
+            style={{
+              "--i": index,
+            }}
           />
         ))}
       </div>
 
+
       {/* ======================================================
-          HEADER / NAVIGATION
+          HEADER
           ====================================================== */}
 
       <header className="site-header">
 
-        {/* Application logo and brand name. */}
+        {/* Application brand. */}
         <a
           className="brand"
           href="#"
-          onClick={() =>
+          onClick={(event) => {
+            /*
+             * Prevent the browser from changing the page hash.
+             */
+            event.preventDefault();
+
+            /*
+             * Scroll back to the top.
+             */
             window.scrollTo({
               top: 0,
               behavior: "smooth",
-            })
-          }
+            });
+
+            /*
+             * Close the mobile menu if it is open.
+             */
+            setMenuOpen(false);
+          }}
         >
-          <span className="brand-mark">☾</span>
+          <span className="brand-mark">
+            ☾
+          </span>
 
           <span>
-            <strong>Nur Search</strong>
-            <small>Quran &amp; Sunnah</small>
+            <strong>
+              Nur Search
+            </strong>
+
+            <small>
+              Quran &amp; Sunnah
+            </small>
           </span>
         </a>
 
-        {/* Main navigation links. */}
-        <nav className={`nav-links ${menuOpen ? "open" : ""}`}>
-          <a href="#search">Search</a>
-          <a href="#topics">Topics</a>
-          <a href="#sources">Sources</a>
-          <a href="#about">About</a>
+
+        {/* Main navigation. */}
+        <nav
+          className={`nav-links ${
+            menuOpen ? "open" : ""
+          }`}
+        >
+          <a href="#search">
+            Search
+          </a>
+
+          <a href="#topics">
+            Topics
+          </a>
+
+          <a href="#sources">
+            Sources
+          </a>
+
+          <a href="#about">
+            About
+          </a>
         </nav>
 
-        {/* Header action buttons. */}
+
+        {/* Header controls. */}
         <div className="header-actions">
 
-          {/* Dark/light theme switch. */}
+          {/* Theme switch. */}
           <button
             className="icon-button"
             aria-label="Toggle theme"
             onClick={() =>
               setTheme(
-                theme === "dark" ? "light" : "dark"
+                (previous) =>
+                  previous ===
+                  "dark"
+                    ? "light"
+                    : "dark"
               )
             }
           >
@@ -553,11 +1070,21 @@ export default function App() {
             )}
           </button>
 
-          {/* Mobile navigation menu button. */}
+
+          {/* Mobile navigation button. */}
           <button
             className="icon-button mobile-menu"
-            aria-label="Open menu"
-            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label={
+              menuOpen
+                ? "Close menu"
+                : "Open menu"
+            }
+            onClick={() =>
+              setMenuOpen(
+                (previous) =>
+                  !previous
+              )
+            }
           >
             {menuOpen ? (
               <X size={20} />
@@ -565,95 +1092,134 @@ export default function App() {
               <Menu size={20} />
             )}
           </button>
+
         </div>
       </header>
+
 
       <main>
 
         {/* ====================================================
-            HERO / SEARCH SECTION
+            HERO SECTION
             ==================================================== */}
 
-        <section className="hero" id="search">
+        <section
+          className="hero"
+          id="search"
+        >
 
-          {/* Decorative hero symbol. */}
-          <div className="hero-ornament">✦</div>
+          {/* Decorative symbol. */}
+          <div
+            className="hero-ornament"
+            aria-hidden="true"
+          >
+            ✦
+          </div>
 
-          {/* Small descriptive label. */}
+
+          {/* Section label. */}
           <p className="eyebrow">
             <Sparkles size={15} />
             Source-first Islamic search
           </p>
 
-          {/* Main application heading. */}
+
+          {/* Main heading. */}
           <h1>
             Search the light of
             <br />
-            <span>Quran &amp; Sunnah.</span>
+            <span>
+              Quran &amp; Sunnah.
+            </span>
           </h1>
+
 
           {/* Application description. */}
           <p className="hero-copy">
-            Explore Quran verses, hadith and live web discovery
-            with a calm, source-focused interface and optional
-            browser AI.
+            Explore Quran verses,
+            hadith and live web
+            discovery with a calm,
+            source-focused interface
+            and optional browser AI.
           </p>
 
-          {/* Main search input. */}
+
+          {/* Main search form. */}
           <SearchBox
             query={query}
             setQuery={setQuery}
-            onSubmit={() => runSearch()}
+            onSubmit={() =>
+              runSearch()
+            }
             loading={loading}
           />
 
-          {/* ==================================================
-              POPULAR SEARCHES
-              ================================================== */}
 
+          {/* Popular searches. */}
           <div className="popular-row">
-            <span>Explore:</span>
+            <span>
+              Explore:
+            </span>
 
-            {popularSearches.map((item) => (
-              <button
-                key={item}
-                onClick={() =>
-                  chooseTopic({ query: item })
-                }
-              >
-                {item}
-              </button>
-            ))}
+            {popularSearches.map(
+              (item) => (
+                <button
+                  key={item}
+                  onClick={() =>
+                    chooseTopic({
+                      query: item,
+                    })
+                  }
+                >
+                  {item}
+                </button>
+              )
+            )}
           </div>
 
-          {/* ==================================================
-              FEATURE / CAPABILITY SUMMARY
-              ================================================== */}
 
+          {/* Feature summary. */}
           <div className="hero-stats">
 
             <div>
-              <strong>Quran</strong>
-              <span>Live search</span>
+              <strong>
+                Quran
+              </strong>
+              <span>
+                Live search
+              </span>
             </div>
 
             <div>
-              <strong>Hadith</strong>
-              <span>Browser dataset</span>
+              <strong>
+                Hadith
+              </strong>
+              <span>
+                Browser dataset
+              </span>
             </div>
 
             <div>
-              <strong>AI</strong>
-              <span>Optional semantic mode</span>
+              <strong>
+                AI
+              </strong>
+              <span>
+                Optional semantic mode
+              </span>
             </div>
 
             <div>
-              <strong>Web</strong>
-              <span>Live discovery</span>
+              <strong>
+                Web
+              </strong>
+              <span>
+                Live discovery
+              </span>
             </div>
 
           </div>
         </section>
+
 
         {/* ====================================================
             SEARCH WORKSPACE
@@ -661,7 +1227,7 @@ export default function App() {
 
         <section className="search-workspace">
 
-          {/* Search result heading. */}
+          {/* Results heading. */}
           <div className="workspace-head">
 
             <div>
@@ -676,13 +1242,19 @@ export default function App() {
               </h2>
             </div>
 
-            {/* Clear button only appears after a search. */}
+
+            {/* Clear results button. */}
             {submittedQuery && (
               <button
                 className="clear-button"
                 onClick={() => {
+                  /*
+                   * Reset all search-related display state.
+                   */
                   setSubmittedQuery("");
                   setResults([]);
+                  setError("");
+                  setAiLoading(false);
                 }}
               >
                 Clear results
@@ -691,8 +1263,9 @@ export default function App() {
 
           </div>
 
+
           {/* ==================================================
-              SOURCE FILTERS AND SEARCH MODES
+              FILTERS
               ================================================== */}
 
           <div className="filter-row">
@@ -703,66 +1276,94 @@ export default function App() {
               ["quran", "Quran"],
               ["hadith", "Hadith"],
               ["web", "Web"],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                className={`filter-chip ${
-                  filter === value ? "active" : ""
-                }`}
-                onClick={() => {
-                  setFilter(value);
+            ].map(
+              ([value, label]) => (
+                <button
+                  key={value}
+                  className={`filter-chip ${
+                    filter === value
+                      ? "active"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    /*
+                     * Update the selected filter.
+                     */
+                    setFilter(value);
 
-                  /*
-                   * If a query has already been submitted,
-                   * immediately rerun it using the new filter.
-                   */
-                  if (submittedQuery) {
-                    runSearch(
-                      submittedQuery,
-                      value,
-                      mode
-                    );
-                  }
-                }}
-              >
-                {label}
-              </button>
-            ))}
+                    /*
+                     * If a query is already active, search it
+                     * immediately with the new filter.
+                     */
+                    if (
+                      submittedQuery
+                    ) {
+                      runSearch(
+                        submittedQuery,
+                        value,
+                        mode
+                      );
+                    }
+                  }}
+                >
+                  {label}
+                </button>
+              )
+            )}
 
-            {/* Visual divider between source and ranking controls. */}
+
+            {/* Divider. */}
             <span className="filter-divider" />
+
 
             {/* Search ranking modes. */}
             {[
               ["hybrid", "Smart"],
-              ["semantic", "AI Semantic"],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                className={`mode-chip ${
-                  mode === value ? "active" : ""
-                }`}
-                onClick={() => {
-                  setMode(value);
+              [
+                "semantic",
+                "AI Semantic",
+              ],
+            ].map(
+              ([value, label]) => (
+                <button
+                  key={value}
+                  className={`mode-chip ${
+                    mode === value
+                      ? "active"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    /*
+                     * Update selected mode.
+                     */
+                    setMode(value);
 
-                  /*
-                   * If results already exist, rerun the current
-                   * query using the newly selected mode.
-                   */
-                  if (submittedQuery) {
-                    runSearch(
-                      submittedQuery,
-                      filter,
-                      value
-                    );
-                  }
-                }}
-              >
-                <Sparkles size={14} />
-                {label}
-              </button>
-            ))}
+                    /*
+                     * Rerun the current query when results already
+                     * exist.
+                     */
+                    if (
+                      submittedQuery
+                    ) {
+                      runSearch(
+                        submittedQuery,
+                        filter,
+                        value
+                      );
+                    }
+                  }}
+                >
+                  <Sparkles
+                    size={14}
+                  />
+
+                  {label}
+                </button>
+              )
+            )}
+
           </div>
+
 
           {/* ==================================================
               AI STATUS
@@ -771,131 +1372,181 @@ export default function App() {
           {aiLoading && (
             <div className="ai-status">
               <Sparkles size={16} />
-              Browser AI is ranking the results…
+              Browser AI is ranking
+              the results…
             </div>
           )}
 
+
           {/* ==================================================
-              ERROR MESSAGE
+              ERROR / INFORMATION MESSAGE
               ================================================== */}
 
           {error && (
-            <div className="error-box">
+            <div
+              className="error-box"
+              role="status"
+            >
               {error}
             </div>
           )}
 
+
           {/* ==================================================
-              RESULT DISPLAY
+              RESULTS
               ==================================================
               
-              Three states are possible:
+              The interface always displays one of:
               
-              1. Loading
-              2. Results available
+              1. Loading skeleton
+              2. Search results
               3. Empty state
               */}
 
           {loading ? (
-            /*
-             * Display placeholder cards while external APIs
-             * are responding.
-             */
             <div className="result-grid">
-              {[1, 2, 3].map((item) => (
-                <SkeletonCard key={item} />
-              ))}
+
+              {[1, 2, 3].map(
+                (item) => (
+                  <SkeletonCard
+                    key={item}
+                  />
+                )
+              )}
+
             </div>
           ) : results.length ? (
-            /*
-             * Display actual search results.
-             */
             <div className="result-grid">
-              {results.map((result) => (
-                <ResultCard
-                  key={result.id}
-                  result={result}
-                  bookmarked={bookmarks.some(
-                    (item) => item.id === result.id
-                  )}
-                  copied={copiedId === result.id}
-                  onBookmark={() =>
-                    toggleBookmark(result)
-                  }
-                  onCopy={() =>
-                    copyResult(result)
-                  }
-                />
-              ))}
+
+              {results.map(
+                (result) => (
+                  <ResultCard
+                    key={result.id}
+                    result={result}
+                    bookmarked={bookmarks.some(
+                      (item) =>
+                        item?.id ===
+                        result.id
+                    )}
+                    copied={
+                      copiedId ===
+                      result.id
+                    }
+                    onBookmark={() =>
+                      toggleBookmark(
+                        result
+                      )
+                    }
+                    onCopy={() =>
+                      copyResult(
+                        result
+                      )
+                    }
+                  />
+                )
+              )}
+
             </div>
           ) : (
-            /*
-             * Nothing to display yet or no results were found.
-             */
             <EmptyState
-              submitted={submittedQuery}
+              submitted={
+                submittedQuery
+              }
               history={history}
-              onSearch={runSearch}
+              onSearch={(
+                value
+              ) =>
+                runSearch(
+                  value,
+                  filter,
+                  mode
+                )
+              }
             />
           )}
+
         </section>
 
+
         {/* ====================================================
-            TOPIC DISCOVERY SECTION
+            TOPICS
             ==================================================== */}
 
         <section
           className="topics-section"
           id="topics"
         >
+
           <div className="section-heading">
 
             <p className="section-kicker">
               Explore by meaning
             </p>
 
-            <h2>Topics for reflection</h2>
+            <h2>
+              Topics for reflection
+            </h2>
 
             <p>
-              Start with a theme and let the search engine
+              Start with a theme and
+              let the search engine
               discover related sources.
             </p>
+
           </div>
 
-          {/* Topic cards are generated from the topics data file. */}
+
           <div className="topic-grid">
-            {topics.map((topic) => (
-              <button
-                className="topic-card"
-                key={topic.title}
-                onClick={() => chooseTopic(topic)}
-              >
-                <span className="topic-icon">
-                  <Star size={18} />
-                </span>
 
-                <span>
-                  <strong>{topic.title}</strong>
-                  <small>{topic.description}</small>
-                </span>
+            {topics.map(
+              (topic) => (
+                <button
+                  className="topic-card"
+                  key={topic.title}
+                  onClick={() =>
+                    chooseTopic(
+                      topic
+                    )
+                  }
+                >
 
-                <ChevronRight size={18} />
-              </button>
-            ))}
+                  <span className="topic-icon">
+                    <Star size={18} />
+                  </span>
+
+                  <span>
+                    <strong>
+                      {topic.title}
+                    </strong>
+
+                    <small>
+                      {topic.description}
+                    </small>
+                  </span>
+
+                  <ChevronRight
+                    size={18}
+                  />
+
+                </button>
+              )
+            )}
+
           </div>
         </section>
 
+
         {/* ====================================================
-            ABOUT / FEATURES SECTION
+            ABOUT / FEATURES
             ==================================================== */}
 
         <section
           className="features-section"
           id="about"
         >
+
           <div className="feature-panel">
 
-            {/* Main explanation of the application's philosophy. */}
             <div>
 
               <p className="section-kicker">
@@ -906,57 +1557,72 @@ export default function App() {
                 AI helps find sources.
                 <br />
                 <span>
-                  Sources remain the authority.
+                  Sources remain the
+                  authority.
                 </span>
               </h2>
 
               <p>
-                Nur Search separates primary source results from
-                web discovery and keeps generated search
-                intelligence visibly distinct from source text.
+                Nur Search separates
+                primary source results
+                from web discovery and
+                keeps generated search
+                intelligence visibly
+                distinct from source text.
               </p>
 
             </div>
 
-            {/* Application feature list. */}
+
             <div className="feature-list">
 
               <Feature
-                icon={<Search />}
+                icon={
+                  <Search />
+                }
                 title="Hybrid search"
                 text="Keyword, source and semantic discovery in one workflow."
               />
 
               <Feature
-                icon={<BookOpen />}
+                icon={
+                  <BookOpen />
+                }
                 title="Source-first results"
                 text="Reference, collection and external source information stay visible."
               />
 
               <Feature
-                icon={<Languages />}
+                icon={
+                  <Languages />
+                }
                 title="Multilingual-ready"
                 text="The UI is prepared for Arabic, English and Urdu expansion."
               />
 
               <Feature
-                icon={<Bookmark />}
+                icon={
+                  <Bookmark />
+                }
                 title="Private bookmarks"
                 text="Bookmarks and history stay in the user's browser."
               />
 
             </div>
+
           </div>
         </section>
 
+
         {/* ====================================================
-            SOURCES AND TECHNOLOGY SECTION
+            SOURCES
             ==================================================== */}
 
         <section
           className="sources-section"
           id="sources"
         >
+
           <div className="section-heading">
 
             <p className="section-kicker">
@@ -964,12 +1630,13 @@ export default function App() {
             </p>
 
             <h2>
-              Data &amp; technology sources
+              Data &amp; technology
+              sources
             </h2>
 
           </div>
 
-          {/* External APIs and technologies used by the application. */}
+
           <div className="source-grid">
 
             <SourceBox
@@ -997,8 +1664,11 @@ export default function App() {
             />
 
           </div>
+
         </section>
+
       </main>
+
 
       {/* ======================================================
           FOOTER
@@ -1007,17 +1677,22 @@ export default function App() {
       <footer className="site-footer">
 
         <div>
+
           <span className="brand-mark small">
             ☾
           </span>
+
           {" "}Nur Search
+
         </div>
 
         <span>
-          Frontend-only • GitHub Pages ready • No application backend
+          Frontend-only • GitHub Pages
+          ready • No application backend
         </span>
 
       </footer>
+
     </div>
   );
 }
@@ -1025,19 +1700,8 @@ export default function App() {
 
 /*
  * ============================================================
- * SEARCH BOX COMPONENT
+ * SEARCH BOX
  * ============================================================
- *
- * Responsibilities:
- *
- * - Display search icon.
- * - Manage the input value through React state.
- * - Submit the search when the user presses Enter.
- * - Disable the button while searching.
- * - Prevent empty searches.
- *
- * Keeping this logic in its own component makes the main App
- * component easier to understand and maintain.
  */
 function SearchBox({
   query,
@@ -1050,35 +1714,55 @@ function SearchBox({
       className="search-box"
       onSubmit={(event) => {
         /*
-         * Prevent the browser from performing a traditional
-         * full-page form submission.
+         * Prevent normal browser form submission/reload.
          */
         event.preventDefault();
 
-        // Start the React search workflow.
+        /*
+         * Do not submit an empty query.
+         */
+        if (!String(query || "").trim()) {
+          return;
+        }
+
+        /*
+         * Start the React search process.
+         */
         onSubmit();
       }}
     >
+
       {/* Search icon. */}
       <Search size={22} />
 
-      {/* Main search input. */}
+      {/* Search input. */}
       <input
         value={query}
         onChange={(event) =>
-          setQuery(event.target.value)
+          setQuery(
+            event.target.value
+          )
         }
         placeholder="What are you seeking?"
         aria-label="Search Quran and Sunnah"
+        autoComplete="off"
       />
 
-      {/* Search submit button. */}
+      {/* Search button. */}
       <button
         type="submit"
-        disabled={loading || !query.trim()}
+        disabled={
+          loading ||
+          !String(
+            query || ""
+          ).trim()
+        }
       >
-        {loading ? "Searching…" : "Search"}
+        {loading
+          ? "Searching…"
+          : "Search"}
       </button>
+
     </form>
   );
 }
@@ -1086,19 +1770,8 @@ function SearchBox({
 
 /*
  * ============================================================
- * RESULT CARD COMPONENT
+ * RESULT CARD
  * ============================================================
- *
- * Displays one search result.
- *
- * The result can come from:
- *
- * - Quran
- * - Hadith
- * - Web
- *
- * Each result type receives a visual type label so users can
- * distinguish primary-source material from general web results.
  */
 function ResultCard({
   result,
@@ -1108,7 +1781,7 @@ function ResultCard({
   onCopy,
 }) {
   /*
-   * Convert the internal result type into a user-friendly label.
+   * Convert internal result types into user-friendly labels.
    */
   const typeLabel =
     result.type === "quran"
@@ -1117,58 +1790,64 @@ function ResultCard({
         ? "HADITH"
         : "WEB";
 
+
   /*
-   * Convert the semantic score into a percentage.
+   * Calculate the displayed match percentage.
    *
-   * semanticScore normally contains a decimal value such as:
+   * Semantic score:
+   * 0.87 -> 87%
    *
-   * 0.87
-   *
-   * which becomes:
-   *
-   * 87%
-   *
-   * If no semantic score exists, fall back to the normal
-   * result score.
+   * Normal score is used as a fallback.
    */
-  const semanticPercent = result.semanticScore
-    ? Math.round(result.semanticScore * 100)
-    : result.score || 0;
+  const semanticPercent =
+    typeof result.semanticScore ===
+      "number"
+      ? Math.round(
+          result.semanticScore *
+            100
+        )
+      : Number(
+          result.score || 0
+        );
+
 
   return (
     <article
       className={`result-card ${result.type}`}
     >
 
-      {/* ======================================================
-          RESULT HEADER
-          ====================================================== */}
-
+      {/* Result header. */}
       <div className="result-topline">
 
-        {/* Quran/Hadith/Web badge. */}
         <span className="source-badge">
           {typeLabel}
         </span>
 
-        {/* Reference number/title. */}
         <span className="result-reference">
-          {result.reference || result.title}
+          {result.reference ||
+            result.title ||
+            "Source"}
         </span>
 
       </div>
 
-      {/* Result title. */}
-      <h3>{result.title}</h3>
 
-      {/* Optional secondary title/subtitle. */}
+      {/* Result title. */}
+      <h3>
+        {result.title ||
+          "Search result"}
+      </h3>
+
+
+      {/* Optional subtitle. */}
       {result.subtitle && (
         <p className="result-subtitle">
           {result.subtitle}
         </p>
       )}
 
-      {/* Optional Arabic text. */}
+
+      {/* Optional Arabic/source text. */}
       {result.arabic && (
         <p
           className="arabic-text"
@@ -1178,47 +1857,57 @@ function ResultCard({
         </p>
       )}
 
+
       {/* Main result text. */}
       <p className="result-text">
-        {result.text}
+        {result.text ||
+          "No text available."}
       </p>
 
-      {/* ======================================================
-          RESULT METADATA
-          ====================================================== */}
 
+      {/* Result metadata. */}
       <div className="result-meta">
 
-        {/* Source name. */}
-        <span>{result.source}</span>
+        <span>
+          {result.source ||
+            "Unknown source"}
+        </span>
 
-        {/* Semantic/normal match score when available. */}
         {semanticPercent > 0 && (
           <span>
-            Match {semanticPercent}%
+            Match{" "}
+            {semanticPercent}%
           </span>
         )}
 
       </div>
 
-      {/* ======================================================
-          RESULT ACTIONS
-          ====================================================== */}
 
+      {/* Result action buttons. */}
       <div className="result-actions">
 
-        {/* Open the original source in a new tab. */}
-        <a
-          href={result.sourceUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Open source
-          <ExternalLink size={14} />
-        </a>
+        {/* Open original source. */}
+        {result.sourceUrl ? (
+          <a
+            href={result.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open source
+            <ExternalLink
+              size={14}
+            />
+          </a>
+        ) : (
+          <span>
+            Source unavailable
+          </span>
+        )}
 
-        {/* Copy result to clipboard. */}
+
+        {/* Copy button. */}
         <button
+          type="button"
           onClick={onCopy}
           aria-label="Copy result"
         >
@@ -1229,13 +1918,21 @@ function ResultCard({
           )}
         </button>
 
-        {/* Bookmark/unbookmark result. */}
+
+        {/* Bookmark button. */}
         <button
+          type="button"
           className={
-            bookmarked ? "bookmarked" : ""
+            bookmarked
+              ? "bookmarked"
+              : ""
           }
           onClick={onBookmark}
-          aria-label="Bookmark result"
+          aria-label={
+            bookmarked
+              ? "Remove bookmark"
+              : "Bookmark result"
+          }
         >
           <Bookmark
             size={16}
@@ -1248,6 +1945,7 @@ function ResultCard({
         </button>
 
       </div>
+
     </article>
   );
 }
@@ -1255,15 +1953,8 @@ function ResultCard({
 
 /*
  * ============================================================
- * EMPTY STATE COMPONENT
+ * EMPTY STATE
  * ============================================================
- *
- * Displays useful information when there are no search results.
- *
- * There are two main situations:
- *
- * 1. The user has previous searches.
- * 2. The user has not searched yet or no results were found.
  */
 function EmptyState({
   submitted,
@@ -1271,10 +1962,13 @@ function EmptyState({
   onSearch,
 }) {
   /*
-   * If there is no current search but search history exists,
-   * show the recent searches.
+   * When there is no active search but history exists,
+   * show recent searches.
    */
-  if (!submitted && history.length) {
+  if (
+    !submitted &&
+    history.length
+  ) {
     return (
       <div className="empty-state">
 
@@ -1285,31 +1979,36 @@ function EmptyState({
         </h3>
 
         <p>
-          Your recent searches are stored privately
-          in this browser.
+          Your recent searches are
+          stored privately in this
+          browser.
         </p>
 
-        {/* Recent search buttons. */}
+
         <div className="history-list">
-          {history.slice(0, 5).map((item) => (
-            <button
-              key={item}
-              onClick={() => onSearch(item)}
-            >
-              {item}
-            </button>
-          ))}
+
+          {history
+            .slice(0, 5)
+            .map((item) => (
+              <button
+                key={item}
+                onClick={() =>
+                  onSearch(item)
+                }
+              >
+                {item}
+              </button>
+            ))}
+
         </div>
 
       </div>
     );
   }
 
+
   /*
    * Default empty state.
-   *
-   * The message changes depending on whether a search was
-   * submitted.
    */
   return (
     <div className="empty-state">
@@ -1337,24 +2036,21 @@ function EmptyState({
 
 /*
  * ============================================================
- * SKELETON LOADING COMPONENT
+ * SKELETON CARD
  * ============================================================
  *
- * These placeholder cards are displayed while the application
- * waits for external APIs.
- *
- * This provides visual feedback instead of showing a completely
- * blank result area.
+ * Displayed while APIs are being queried.
  */
 function SkeletonCard() {
   return (
-    <div className="result-card skeleton">
-
+    <div
+      className="result-card skeleton"
+      aria-hidden="true"
+    >
       <span />
       <span />
       <span />
       <span />
-
     </div>
   );
 }
@@ -1364,14 +2060,6 @@ function SkeletonCard() {
  * ============================================================
  * FEATURE COMPONENT
  * ============================================================
- *
- * Reusable component for the feature list in the About section.
- *
- * Props:
- *
- * icon  - Lucide icon component
- * title - Feature heading
- * text  - Feature description
  */
 function Feature({
   icon,
@@ -1382,12 +2070,19 @@ function Feature({
     <div className="feature-item">
 
       {/* Feature icon. */}
-      <span>{icon}</span>
+      <span>
+        {icon}
+      </span>
 
-      {/* Feature title and description. */}
+      {/* Feature content. */}
       <div>
-        <strong>{title}</strong>
-        <small>{text}</small>
+        <strong>
+          {title}
+        </strong>
+
+        <small>
+          {text}
+        </small>
       </div>
 
     </div>
@@ -1397,13 +2092,8 @@ function Feature({
 
 /*
  * ============================================================
- * SOURCE BOX COMPONENT
+ * SOURCE BOX
  * ============================================================
- *
- * Displays information about an external API or technology.
- *
- * Each source is presented as a clickable card that opens the
- * relevant documentation in a new browser tab.
  */
 function SourceBox({
   title,
@@ -1418,19 +2108,24 @@ function SourceBox({
       rel="noreferrer"
     >
 
-      {/* Source/technology name. */}
-      <strong>{title}</strong>
+      {/* Source name. */}
+      <strong>
+        {title}
+      </strong>
 
-      {/* Explanation of how the source is used. */}
-      <p>{text}</p>
+      {/* Source explanation. */}
+      <p>
+        {text}
+      </p>
 
       {/* Documentation link indicator. */}
       <span>
         View documentation
-        <ExternalLink size={14} />
+        <ExternalLink
+          size={14}
+        />
       </span>
 
     </a>
   );
 }
-
