@@ -1,58 +1,134 @@
+# Name displayed for this workflow in the GitHub Actions interface.
 name: Deploy Nur Search to GitHub Pages
 
+# Define when this workflow should run.
 on:
+  # Automatically run the workflow whenever code is pushed to the main branch.
   push:
     branches: ["main"]
+
+  # Allow the workflow to be started manually from the GitHub Actions page.
   workflow_dispatch:
 
+# Permissions required by GitHub Pages deployment.
 permissions:
+  # Allows the workflow to read repository contents.
   contents: read
+
+  # Allows the workflow to upload and deploy the GitHub Pages artifact.
   pages: write
+
+  # Allows GitHub's Pages deployment to authenticate securely.
   id-token: write
 
+# Prevent multiple Pages deployments from running at the same time.
+# If a new commit is pushed while another deployment is running,
+# the older deployment can be cancelled.
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
+
+  # ============================================================
+  # BUILD JOB
+  # ============================================================
+  # This job installs dependencies and creates the production
+  # static files in the Vite "dist" directory.
   build:
     runs-on: ubuntu-latest
+
     steps:
-      # Checkout the repository containing the React/Vite application.
-      - name: Checkout
+
+      # --------------------------------------------------------
+      # Step 1: Checkout source code
+      # --------------------------------------------------------
+      # Downloads the repository code into the GitHub Actions runner.
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Install the current LTS Node runtime used by the frontend build.
-      - name: Setup Node
+      # --------------------------------------------------------
+      # Step 2: Setup Node.js
+      # --------------------------------------------------------
+      # Use Node.js 24 instead of Node.js 20 because GitHub Actions
+      # is deprecating Node.js 20 for action execution.
+      #
+      # The npm cache is enabled to make future workflow runs faster.
+      # cache-dependency-path explicitly tells setup-node where the
+      # npm lock file is located.
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
+          cache-dependency-path: package-lock.json
 
-      # Install exactly what package-lock.json describes when it exists.
+      # --------------------------------------------------------
+      # Step 3: Install dependencies
+      # --------------------------------------------------------
+      # npm ci installs dependencies from package-lock.json.
+      #
+      # This is preferred for CI/CD because it uses the exact
+      # dependency versions recorded in the lock file and provides
+      # a clean, reproducible installation.
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      # Build the static site. The repository name is supplied as the Vite base path.
-      - name: Build
+      # --------------------------------------------------------
+      # Step 4: Build the application
+      # --------------------------------------------------------
+      # Creates the production-ready static website.
+      #
+      # VITE_BASE_PATH is set to the repository name because the
+      # application is deployed under:
+      #
+      # https://<username>.github.io/<repository-name>/
+      #
+      # For this project the resulting base path will be:
+      #
+      # /quran-sunnah-search/
+      - name: Build application
         run: npm run build
         env:
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
 
-      # Upload the generated static files to GitHub's Pages artifact service.
+      # --------------------------------------------------------
+      # Step 5: Upload GitHub Pages artifact
+      # --------------------------------------------------------
+      # Uploads the generated "dist" directory as the artifact
+      # that GitHub Pages will deploy.
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
 
+
+  # ============================================================
+  # DEPLOY JOB
+  # ============================================================
+  # This job runs only after the build job completes successfully.
   deploy:
+    # GitHub Pages deployment environment.
     environment:
       name: github-pages
+
+      # GitHub automatically provides the final Pages URL after
+      # the deployment has completed.
       url: ${{ steps.deployment.outputs.page_url }}
+
+    # Run deployment on a fresh Ubuntu runner.
     runs-on: ubuntu-latest
+
+    # Do not deploy unless the build job succeeds.
     needs: build
+
     steps:
-      # Publish the artifact created by the build job.
+
+      # --------------------------------------------------------
+      # Step 6: Deploy to GitHub Pages
+      # --------------------------------------------------------
+      # Publishes the artifact uploaded by the build job.
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
